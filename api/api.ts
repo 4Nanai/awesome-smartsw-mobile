@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {router} from "expo-router";
-import {UserLoginDTO} from "@/lib/definition";
+import {UserLoginDTO, UserRegisterDTO} from "@/lib/definition";
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.example.com';
 
@@ -61,4 +61,19 @@ const loginApi = async (username: string, password: string) => {
     }
 }
 
-export { loginApi };
+const registerApi = async (username: string, email: string, password: string) => {
+    const userRegisterDTO: UserRegisterDTO = {
+        username,
+        email,
+        password,
+    }
+    try {
+        const response = await apiClient.post<{message: string}>('/user/register', userRegisterDTO);
+        return response.data.message;
+    } catch (error) {
+        console.log("Register API Error:", error);
+        throw error;
+    }
+}
+
+export { loginApi, registerApi };

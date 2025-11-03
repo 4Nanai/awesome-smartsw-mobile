@@ -11,35 +11,73 @@ import {
     Pressable,
 } from "react-native";
 import Colors from '../../constants/Colors';
-import {loginApi} from "@/api/api";
+import {registerApi} from "@/api/api";
 import {useRouter} from "expo-router";
 
-export default function LoginPage() {
+export default function RegisterPage() {
     const router = useRouter();
     const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = async () => {
-        if (!username.trim() || !password.trim()) {
-            Alert.alert('Login Error', 'Please enter your username/email and password');
+    const validateForm = () => {
+        if (!username.trim()) {
+            Alert.alert('Registration Error', 'Please enter a username');
+            return false;
+        }
+        if (!email.trim()) {
+            Alert.alert('Registration Error', 'Please enter an email address');
+            return false;
+        }
+        if (!email.includes('@')) {
+            Alert.alert('Registration Error', 'Please enter a valid email address');
+            return false;
+        }
+        if (!password.trim()) {
+            Alert.alert('Registration Error', 'Please enter a password');
+            return false;
+        }
+        if (password.length < 6) {
+            Alert.alert('Registration Error', 'Password must be at least 6 characters long');
+            return false;
+        }
+        if (password !== confirmPassword) {
+            Alert.alert('Registration Error', 'Passwords do not match');
+            return false;
+        }
+        return true;
+    };
+
+    const handleRegister = async () => {
+        if (!validateForm()) {
             return;
         }
 
         setIsLoading(true);
         try {
-            console.log('Sign In:', {username, password});
-            await loginApi(username, password);
-            router.replace("/(home)")
+            console.log('Register:', {username, email, password});
+            await registerApi(username, email, password);
+            Alert.alert(
+                'Registration Successful',
+                'Your account has been created successfully. Please sign in.',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => router.back()
+                    }
+                ]
+            );
         } catch (error) {
-            Alert.alert('Error', 'Login failed, please check your credentials.');
+            Alert.alert('Error', 'Registration failed. Please try again.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleRegister = () => {
-        router.push('/register');
+    const handleBackToLogin = () => {
+        router.back();
     };
 
     return (
@@ -51,16 +89,16 @@ export default function LoginPage() {
                 contentContainerStyle={styles.scrollContainer}
                 keyboardShouldPersistTaps="handled"
             >
-                <View style={styles.loginContainer}>
-                    <Text style={styles.title}>Welcome back</Text>
-                    <Text style={styles.subtitle}>Please login</Text>
+                <View style={styles.registerContainer}>
+                    <Text style={styles.title}>Create Account</Text>
+                    <Text style={styles.subtitle}>Please sign up to continue</Text>
 
                     {/* Input Fields */}
                     <View style={styles.inputContainer}>
                         <Text style={styles.inputLabel}>Username</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Please enter your username"
+                            placeholder="Enter your username"
                             value={username}
                             onChangeText={setUsername}
                             autoCapitalize="none"
@@ -70,10 +108,23 @@ export default function LoginPage() {
                     </View>
 
                     <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Email</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter your email address"
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            keyboardType="email-address"
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
                         <Text style={styles.inputLabel}>Password</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Please enter your password"
+                            placeholder="Enter your password"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
@@ -82,14 +133,27 @@ export default function LoginPage() {
                         />
                     </View>
 
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Confirm Password</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Confirm your password"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                        />
+                    </View>
+
                     {/* Buttons */}
                     <Pressable
-                        style={({pressed}) => [pressed && {opacity: 0.5}, styles.button, styles.loginButton]}
-                        onPress={handleLogin}
+                        style={({pressed}) => [pressed && {opacity: 0.5}, styles.button, styles.registerButton]}
+                        onPress={handleRegister}
                         disabled={isLoading}
                     >
-                        <Text style={styles.loginButtonText}>
-                            {isLoading ? "Signing You In..." : "Sign In"}
+                        <Text style={styles.registerButtonText}>
+                            {isLoading ? "Creating Account..." : "Sign Up"}
                         </Text>
                     </Pressable>
 
@@ -100,17 +164,12 @@ export default function LoginPage() {
                         <View style={styles.dividerLine}/>
                     </View>
 
-                    {/* Sign up */}
+                    {/* Back to login */}
                     <Pressable
-                        style={({pressed}) => [pressed && {opacity: 0.5}, styles.button, styles.registerButton]}
-                        onPress={handleRegister}
+                        style={({pressed}) => [pressed && {opacity: 0.5}, styles.button, styles.loginButton]}
+                        onPress={handleBackToLogin}
                     >
-                        <Text style={styles.registerButtonText}>Sign Up Now</Text>
-                    </Pressable>
-
-                    {/* Forgot password */}
-                    <Pressable style={({pressed}) => [pressed && {opacity: 0.5}, styles.forgotPasswordButton]}>
-                        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                        <Text style={styles.loginButtonText}>Already have an account? Sign In</Text>
                     </Pressable>
                 </View>
             </ScrollView>
@@ -128,7 +187,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 20,
     },
-    loginContainer: {
+    registerContainer: {
         width: '100%',
         maxWidth: 400,
         alignSelf: 'center',
@@ -170,21 +229,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 16,
     },
-    loginButton: {
+    registerButton: {
         backgroundColor: Colors.light.tint,
         marginTop: 20,
     },
-    loginButtonText: {
+    registerButtonText: {
         color: 'white',
         fontSize: 18,
         fontWeight: '600',
     },
-    registerButton: {
+    loginButton: {
         backgroundColor: 'transparent',
         borderWidth: 2,
         borderColor: Colors.light.tint,
     },
-    registerButtonText: {
+    loginButtonText: {
         color: Colors.light.tint,
         fontSize: 16,
         fontWeight: '600',
@@ -204,13 +263,4 @@ const styles = StyleSheet.create({
         color: '#666',
         fontSize: 14,
     },
-    forgotPasswordButton: {
-        alignItems: 'center',
-        paddingVertical: 16,
-    },
-    forgotPasswordText: {
-        color: Colors.light.tint,
-        fontSize: 14,
-        textDecorationLine: 'underline',
-    },
-})
+});

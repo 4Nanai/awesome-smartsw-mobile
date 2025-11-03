@@ -7,6 +7,10 @@ export default function LoginPageLayout() {
                 headerTitle: "Login Page",
                 headerShown: false,
             }}/>
+            <Stack.Screen name="register" options={{
+                headerTitle: "Register Page",
+                headerShown: false,
+            }}/>
         </Stack>
     );
 }
