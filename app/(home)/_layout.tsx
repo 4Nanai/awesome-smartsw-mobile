@@ -4,7 +4,7 @@ export default function HomePageLayout() {
     return (
         <>
             <Tabs>
-                <Tabs.Screen name="index" options={{headerTitle: "Home", headerShown: true, title: "Home"}}/>
+                <Tabs.Screen name="(device)" options={{headerTitle: "Home", headerShown: false, title: "Home"}}/>
             </Tabs>
         </>
     );

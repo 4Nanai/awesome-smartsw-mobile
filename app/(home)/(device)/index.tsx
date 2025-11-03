@@ -54,15 +54,13 @@ export default function HomePage() {
     };
 
     const handleDevicePress = (device: Device) => {
-        // TODO: route to device detail page
         console.log('Navigate to device:', device.id);
-        // router.push(`/device/${device.id}`);
+        router.push(`/(home)/(device)/device/${device.id}/`);
     };
 
     const handleBindNewDevice = () => {
-        // TODO: route to bind new device page
         console.log('Navigate to bind new device');
-        // router.push('/bind-device');
+        router.push('/(home)/(device)/binding');
     };
 
     const connectionStatus = {
@@ -129,7 +127,7 @@ export default function HomePage() {
                             showsVerticalScrollIndicator={false}
                         />
                         <Pressable style={styles.addButton} onPress={handleBindNewDevice}>
-                            <Text style={styles.addButtonText}>+ Bind New Device</Text>
+                            <Text style={styles.addButtonText}>Bind New Device</Text>
                         </Pressable>
                     </>
                 ) : (

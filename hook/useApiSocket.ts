@@ -10,8 +10,7 @@ export const useApiSocket = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     const { sendMessage, lastMessage, readyState } = useWebSocket(WS_BASE_URL, {
-        shouldReconnect: () => true,
-        reconnectInterval: 3000,
+        shouldReconnect: () => false,
         onOpen: async () => {
             console.log('WebSocket connection established. Authenticating...');
             const token = await AsyncStorage.getItem("user-token");
