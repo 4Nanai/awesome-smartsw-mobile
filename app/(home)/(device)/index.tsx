@@ -1,46 +1,56 @@
-import { Pressable, Text, View, StyleSheet, FlatList } from "react-native";
+import {Pressable, Text, View, StyleSheet, FlatList} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useApiSocket } from "@/hook/useApiSocket";
-import { ReadyState } from 'react-use-websocket';
-import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
-import { DeviceDTO } from "@/lib/definition";
+import {useApiSocket} from "@/hook/useApiSocket";
+import {ReadyState} from 'react-use-websocket';
+import {useRouter} from "expo-router";
+import {useState, useEffect} from "react";
+import {DeviceDTO, UserMessageDTO} from "@/lib/definition";
 import {getAllDevicesApi} from "@/api/api";
+import {getAllDevicesMockApi} from "@/api/mockApi";
 
 export default function HomePage() {
     const router = useRouter();
     const [devices, setDevices] = useState<DeviceDTO[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const handleEndpointStateUpdate = (message: UserMessageDTO) => {
+        if (message.payload && message.payload.uniqueHardwareId && message.payload.state) {
+            setDevices(prevDevices => prevDevices.map(device => {
+                if (device.unique_hardware_id === message.payload!.uniqueHardwareId) {
+                    return {
+                        ...device,
+                        status: message.payload!.state!
+                    };
+                }
+                return device;
+            }));
+        }
+    };
+
     const {
         sendMessage,
         lastMessage,
         readyState,
         isAuthenticated
-    } = useApiSocket();
+    } = useApiSocket(handleEndpointStateUpdate);
 
-    // TODO: fetch devices from API
     const fetchDevices = async () => {
         try {
             setLoading(true);
-            // TODO: implement actual API call to fetch devices
             const devices = await getAllDevicesApi();
             console.log('Fetched devices:', devices);
             if (!devices || devices.length === 0) {
                 // mock data
-                setTimeout(() => {
-                    setDevices([
-                        { unique_hardware_id: "AC-A3-BE-42-11-E1", alias: 'Smart Light 1', status: true },
-                        { unique_hardware_id: "AC-A3-BE-42-11-E2", alias: 'Smart Thermostat', status: false },
-                        { unique_hardware_id: "AC-A3-BE-42-11-E3", alias: 'Smart Lock', status: true },
-                        { unique_hardware_id: "AC-A3-BE-42-11-E4", alias: 'Smart Camera', status: false },
-                        { unique_hardware_id: "AC-A3-BE-42-11-E5", alias: 'Smart Plug', status: true },
-                        { unique_hardware_id: "AC-A3-BE-42-11-E6", alias: 'Smart Speaker', status: true },
-                    ]);
-                    setLoading(false);
-                }, 1000);
+                const mockDevices: DeviceDTO[] = await getAllDevicesMockApi();
+                setDevices(mockDevices);
             } else {
                 setDevices(devices);
+                if (readyState === ReadyState.OPEN && isAuthenticated) {
+                    const message: UserMessageDTO = {
+                        type: "query_endpoint_state"
+                    }
+                    sendMessage(JSON.stringify(message));
+                }
             }
             setLoading(false);
         } catch (error) {
@@ -78,22 +88,29 @@ export default function HomePage() {
         [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
     }[readyState];
 
-    const getStatusColor = (status: boolean) => {
+    const getStatusColor = (status: "on" | "off" | "online" | "offline" | "error") => {
         switch (status) {
-            case true: return '#4CAF50';
-            case false: return '#F44336';
-            default: return '#757575';
+            case "online":
+                return '#4CAF50';
+            case "offline":
+                return '#F44336';
+            case "on":
+                return '#2196F3';
+            case "off":
+                return '#9E9E9E';
+            default:
+                return '#757575';
         }
     };
 
-    const renderDeviceItem = ({ item }: { item: DeviceDTO }) => (
+    const renderDeviceItem = ({item}: { item: DeviceDTO }) => (
         <Pressable style={styles.deviceItem} onPress={() => handleDevicePress(item)}>
             <View style={styles.deviceInfo}>
                 <Text style={styles.deviceName}>{item.alias}</Text>
                 <View style={styles.statusContainer}>
-                    <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} />
-                    <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                        {item.status ? "Online" : "Offline"}
+                    <View style={[styles.statusDot, {backgroundColor: getStatusColor(item.status)}]}/>
+                    <Text style={[styles.statusText, {color: getStatusColor(item.status)}]}>
+                        {item.status}
                     </Text>
                 </View>
             </View>

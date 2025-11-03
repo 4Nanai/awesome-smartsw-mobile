@@ -10,11 +10,11 @@ export interface UserRegisterDTO {
 }
 
 export interface UserMessageDTO {
-    type: "endpoint_state" | "user_auth" | "user_command" | "auth_success",
+    type: "user_auth" | "user_command" | "auth_success" | "endpoint_state"  | "query_endpoint_state",
     payload?: {
         uniqueHardwareId?: string,
         token?: string,
-        state?: boolean,
+        state?: "on" | "off" | "online" | "offline" | "error",
         command?: {
             type: string,
             state?: boolean,
@@ -28,5 +28,5 @@ export interface UserMessageDTO {
 export interface DeviceDTO {
     unique_hardware_id: string,
     alias: string | null,
-    status: boolean,
+    status: "on" | "off" | "online" | "offline" | "error",
 }

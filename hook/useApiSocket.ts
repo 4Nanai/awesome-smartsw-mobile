@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react';
 import useWebSocket from 'react-use-websocket';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {UserMessageDTO} from "@/lib/definition";
 
 const WS_BASE_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://your-default-websocket-url.com";
 
-export const useApiSocket = () => {
+export const useApiSocket = (onEndpointStateChange?: (message: UserMessageDTO) => void) => {
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    const { sendMessage, lastMessage, readyState } = useWebSocket(WS_BASE_URL, {
+    const {sendMessage, lastMessage, readyState} = useWebSocket(WS_BASE_URL, {
         shouldReconnect: () => false,
         onOpen: async () => {
             console.log('WebSocket connection established. Authenticating...');
@@ -48,6 +48,9 @@ export const useApiSocket = () => {
 
                 if (data.type === 'endpoint_state') {
                     console.log('Received endpoint state change:', data.payload);
+                    if (onEndpointStateChange) {
+                        onEndpointStateChange(data);
+                    }
                 }
 
             } catch (e) {
