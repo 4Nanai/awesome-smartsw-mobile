@@ -9,3 +9,18 @@ export interface UserRegisterDTO {
     password: string,
 }
 
+export interface UserMessageDTO {
+    type: "endpoint_state" | "user_auth" | "user_command" | "auth_success",
+    payload?: {
+        uniqueHardwareId?: string,
+        token?: string,
+        state?: boolean,
+        command?: {
+            type: string,
+            state?: boolean,
+            data?: boolean,
+        },
+        [key: string]: any,
+    },
+    message?: string,
+}
