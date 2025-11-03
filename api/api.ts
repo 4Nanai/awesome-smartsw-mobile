@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {router} from "expo-router";
-import {UserLoginDTO, UserRegisterDTO} from "@/lib/definition";
+import {DeviceDTO, UserLoginDTO, UserRegisterDTO} from "@/lib/definition";
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.example.com';
 
@@ -76,4 +76,14 @@ const registerApi = async (username: string, email: string, password: string) =>
     }
 }
 
-export { loginApi, registerApi };
+const getAllDevicesApi = async () => {
+    try {
+        const response = await apiClient.get<DeviceDTO[]>('/device/manage');
+        return response.data;
+    } catch (error) {
+        console.log("Get All Devices API Error:", error);
+        throw error;
+    }
+}
+
+export { loginApi, registerApi, getAllDevicesApi };

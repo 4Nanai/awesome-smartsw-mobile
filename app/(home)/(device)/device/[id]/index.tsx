@@ -7,7 +7,7 @@ export default function DevicePage() {
     return (
         <>
             <Text>
-                Device Page for device ID: {deviceId}
+                Device Page for device UID: {deviceId}
             </Text>
         </>
     );

@@ -25,13 +25,8 @@ export interface UserMessageDTO {
     message?: string,
 }
 
-export interface Device {
-    id: string;
-    name: string;
-    status: 'online' | 'offline' | 'connecting';
-    hardwareId?: string;
-}
-
-export interface DeviceListResponse {
-    devices: Device[];
+export interface DeviceDTO {
+    unique_hardware_id: string,
+    alias: string | null,
+    status: boolean,
 }

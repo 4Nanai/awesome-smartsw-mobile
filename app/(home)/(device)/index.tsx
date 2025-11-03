@@ -4,11 +4,12 @@ import { useApiSocket } from "@/hook/useApiSocket";
 import { ReadyState } from 'react-use-websocket';
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import { Device } from "@/lib/definition";
+import { DeviceDTO } from "@/lib/definition";
+import {getAllDevicesApi} from "@/api/api";
 
 export default function HomePage() {
     const router = useRouter();
-    const [devices, setDevices] = useState<Device[]>([]);
+    const [devices, setDevices] = useState<DeviceDTO[]>([]);
     const [loading, setLoading] = useState(true);
 
     const {
@@ -23,19 +24,25 @@ export default function HomePage() {
         try {
             setLoading(true);
             // TODO: implement actual API call to fetch devices
-
-            // mock data
-            setTimeout(() => {
-                setDevices([
-                    { id: '1', name: 'Smart Light 1', status: 'online' },
-                    { id: '2', name: 'Smart Switch 2', status: 'offline' },
-                    { id: '3', name: 'Temperature Sensor', status: 'connecting' },
-                    { id: '4', name: 'Smart Plug', status: 'online' },
-                    { id: '5', name: 'Security Camera', status: 'offline' },
-                    { id: '6', name: 'Smart Thermostat', status: 'online' },
-                ]);
-                setLoading(false);
-            }, 1000);
+            const devices = await getAllDevicesApi();
+            console.log('Fetched devices:', devices);
+            if (!devices || devices.length === 0) {
+                // mock data
+                setTimeout(() => {
+                    setDevices([
+                        { unique_hardware_id: "AC-A3-BE-42-11-E1", alias: 'Smart Light 1', status: true },
+                        { unique_hardware_id: "AC-A3-BE-42-11-E2", alias: 'Smart Thermostat', status: false },
+                        { unique_hardware_id: "AC-A3-BE-42-11-E3", alias: 'Smart Lock', status: true },
+                        { unique_hardware_id: "AC-A3-BE-42-11-E4", alias: 'Smart Camera', status: false },
+                        { unique_hardware_id: "AC-A3-BE-42-11-E5", alias: 'Smart Plug', status: true },
+                        { unique_hardware_id: "AC-A3-BE-42-11-E6", alias: 'Smart Speaker', status: true },
+                    ]);
+                    setLoading(false);
+                }, 1000);
+            } else {
+                setDevices(devices);
+            }
+            setLoading(false);
         } catch (error) {
             console.error('Failed to fetch devices:', error);
             setLoading(false);
@@ -53,9 +60,9 @@ export default function HomePage() {
         router.replace("/(login)");
     };
 
-    const handleDevicePress = (device: Device) => {
-        console.log('Navigate to device:', device.id);
-        router.push(`/(home)/(device)/device/${device.id}/`);
+    const handleDevicePress = (device: DeviceDTO) => {
+        console.log('Navigate to device:', device.unique_hardware_id);
+        router.push(`/(home)/(device)/device/${device.unique_hardware_id}/`);
     };
 
     const handleBindNewDevice = () => {
@@ -71,23 +78,22 @@ export default function HomePage() {
         [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
     }[readyState];
 
-    const getStatusColor = (status: Device['status']) => {
+    const getStatusColor = (status: boolean) => {
         switch (status) {
-            case 'online': return '#4CAF50';
-            case 'offline': return '#F44336';
-            case 'connecting': return '#FF9800';
+            case true: return '#4CAF50';
+            case false: return '#F44336';
             default: return '#757575';
         }
     };
 
-    const renderDeviceItem = ({ item }: { item: Device }) => (
+    const renderDeviceItem = ({ item }: { item: DeviceDTO }) => (
         <Pressable style={styles.deviceItem} onPress={() => handleDevicePress(item)}>
             <View style={styles.deviceInfo}>
-                <Text style={styles.deviceName}>{item.name}</Text>
+                <Text style={styles.deviceName}>{item.alias}</Text>
                 <View style={styles.statusContainer}>
                     <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} />
                     <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                        {item.status}
+                        {item.status ? "Online" : "Offline"}
                     </Text>
                 </View>
             </View>
@@ -122,7 +128,7 @@ export default function HomePage() {
                         <FlatList
                             data={devices}
                             renderItem={renderDeviceItem}
-                            keyExtractor={(item) => item.id}
+                            keyExtractor={(item) => item.unique_hardware_id}
                             style={styles.devicesList}
                             showsVerticalScrollIndicator={false}
                         />
