@@ -11,22 +11,26 @@ import {
     Pressable,
 } from "react-native";
 import Colors from '../../constants/Colors';
+import {loginApi} from "@/api/api";
+import {useRouter} from "expo-router";
 
 export default function LoginPage() {
-    const [usernameOrEmail, setUsernameOrEmail] = useState('');
+    const router = useRouter();
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async () => {
-        if (!usernameOrEmail.trim() || !password.trim()) {
+        if (!username.trim() || !password.trim()) {
             Alert.alert('Login Error', 'Please enter your username/email and password');
             return;
         }
 
         setIsLoading(true);
         try {
-            // TODO: 实现登录逻辑
-            console.log('Sign In:', {usernameOrEmail, password});
+            console.log('Sign In:', {username, password});
+            await loginApi(username, password);
+            router.replace("/(home)")
         } catch (error) {
             Alert.alert('Error', 'Login failed, please check your credentials.');
         } finally {
@@ -53,15 +57,15 @@ export default function LoginPage() {
 
                     {/* Input Fields */}
                     <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Username/Email</Text>
+                        <Text style={styles.inputLabel}>Username</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Please enter your username or email"
-                            value={usernameOrEmail}
-                            onChangeText={setUsernameOrEmail}
+                            placeholder="Please enter your username"
+                            value={username}
+                            onChangeText={setUsername}
                             autoCapitalize="none"
                             autoCorrect={false}
-                            keyboardType="email-address"
+                            keyboardType="default"
                         />
                     </View>
 

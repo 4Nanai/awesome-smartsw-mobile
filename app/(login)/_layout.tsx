@@ -5,7 +5,7 @@ export default function LoginPageLayout() {
         <Stack>
             <Stack.Screen name="index" options={{
                 headerTitle: "Login Page",
-                headerShown: true,
+                headerShown: false,
             }}/>
         </Stack>
     );

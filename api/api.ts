@@ -1,10 +1,9 @@
 import axios from 'axios';
-import dotenv from 'dotenv';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {router} from "expo-router";
+import {UserLoginDTO} from "@/lib/definition";
 
-dotenv.config();
-const BASE_URL = process.env.BASE_URL || 'https://api.example.com';
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.example.com';
 
 const apiClient = axios.create({
     baseURL: BASE_URL,
@@ -35,7 +34,7 @@ apiClient.interceptors.response.use(
         const originalRequest = error.config;
         if (error.response && error.response.status === 401) {
             if (originalRequest.url.includes('login')) {
-                return Promise.reject(error);
+                return Promise.reject(error.response.data || error);
             }
             console.log('Unauthorized, redirecting to login...');
             await AsyncStorage.removeItem("user-token");
@@ -46,3 +45,20 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+const loginApi = async (username: string, password: string) => {
+    const userLoginDTO: UserLoginDTO = {
+        username,
+        password,
+    }
+    try {
+        const response = await apiClient.post<{message: string, token: string}>('/user/login', userLoginDTO);
+        await AsyncStorage.setItem("user-token", response.data.token);
+        return response.data.message;
+    } catch (error) {
+        console.log("Login API Error:", error);
+        throw error;
+    }
+}
+
+export { loginApi };
