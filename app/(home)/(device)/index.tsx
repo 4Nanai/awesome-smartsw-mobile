@@ -72,6 +72,10 @@ export default function HomePage() {
         router.replace("/(login)");
     };
 
+    const handleRefresh = async () => {
+        fetchDevices();
+    }
+
     const handleDevicePress = (device: DeviceDTO) => {
         console.log('Navigate to device:', device.unique_hardware_id);
         router.push(`/(home)/(device)/device/${device.unique_hardware_id}/`);
@@ -106,7 +110,8 @@ export default function HomePage() {
     };
 
     const renderDeviceItem = ({item}: { item: DeviceDTO }) => (
-        <Pressable style={styles.deviceItem} onPress={() => handleDevicePress(item)}>
+        <Pressable style={({pressed}) => [styles.deviceItem, pressed && {opacity: 0.5}]}
+                   onPress={() => handleDevicePress(item)}>
             <View style={styles.deviceInfo}>
                 <Text style={styles.deviceName}>{item.alias}</Text>
                 <View style={styles.statusContainer}>
@@ -124,7 +129,12 @@ export default function HomePage() {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Smart Devices</Text>
-                <Pressable onPress={handleLogout} style={styles.logoutButton}>
+                <Pressable onPress={handleRefresh}
+                           style={({pressed}) => [styles.refreshButton, pressed && {opacity: 0.5}]}>
+                    <Text style={styles.refreshText}>Refresh</Text>
+                </Pressable>
+                <Pressable onPress={handleLogout}
+                           style={({pressed}) => [styles.logoutButton, pressed && {opacity: 0.5}]}>
                     <Text style={styles.logoutText}>Logout</Text>
                 </Pressable>
             </View>
@@ -159,7 +169,8 @@ export default function HomePage() {
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyTitle}>No Devices Found</Text>
                         <Text style={styles.emptySubtitle}>Start by binding your first smart device</Text>
-                        <Pressable style={styles.primaryButton} onPress={handleBindNewDevice}>
+                        <Pressable style={({pressed}) => [styles.primaryButton, pressed && {opacity: 0.5}]}
+                                   onPress={handleBindNewDevice}>
                             <Text style={styles.primaryButtonText}>Bind New Device</Text>
                         </Pressable>
                     </View>
@@ -193,7 +204,19 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 5,
     },
+    refreshButton: {
+        backgroundColor: '#2196F3',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 5,
+        marginLeft: 40,
+    },
     logoutText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    refreshText: {
         color: 'white',
         fontSize: 12,
         fontWeight: 'bold',
