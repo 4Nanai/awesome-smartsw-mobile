@@ -32,7 +32,9 @@ export default function HomePage() {
         lastMessage,
         readyState,
         isAuthenticated
-    } = useApiSocket(handleEndpointStateUpdate);
+    } = useApiSocket({
+        onEndpointStateChange: handleEndpointStateUpdate
+    });
 
     const fetchDevices = async () => {
         try {

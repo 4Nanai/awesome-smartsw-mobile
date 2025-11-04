@@ -2,6 +2,8 @@ import {Text, View, TextInput, Pressable, StyleSheet, Alert, ActivityIndicator} 
 import {useState, useEffect, useRef} from "react";
 import {useRouter} from "expo-router";
 import {verifyEndpointAPConnection, getProvisioningToken, sendWiFiCredentialsToEndpoint} from "@/api/api";
+import {useApiSocket} from "@/hook/useApiSocket";
+import {UserMessageDTO} from "@/lib/definition";
 
 export default function BindingPage() {
     const router = useRouter();
@@ -11,8 +13,39 @@ export default function BindingPage() {
     const [isEndpointConnected, setIsEndpointConnected] = useState(false);
     const [isBinding, setIsBinding] = useState(false);
     const [isChecking, setIsChecking] = useState(true);
+    const [isWaitingForDevice, setIsWaitingForDevice] = useState(false);
+    const [token, setToken] = useState("");
 
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // WebSocket handler for new device connection
+    const handleNewDeviceConnected = (message: UserMessageDTO) => {
+        console.log("New device connected event received:", message);
+        if (message.payload?.token !== token) {
+            console.log("Token mismatch, ignoring this device connection.");
+            setIsWaitingForDevice(false);
+            setIsBinding(false);
+            Alert.alert("Error", "Received device connection with invalid token. Please try again.", [
+                {
+                    text: "OK",
+                    onPress: () => router.back()
+                }
+            ]);
+            return;
+        }
+        setIsWaitingForDevice(false);
+        setIsBinding(false);
+
+        Alert.alert("Success", "Device binding completed successfully!", [
+            {
+                text: "OK",
+                onPress: () => router.back()
+            }
+        ]);
+    };
+
+    // Initialize WebSocket connection
+    useApiSocket({onNewDeviceConnected: handleNewDeviceConnected});
 
     // Check endpoint AP connection every 1 second
     useEffect(() => {
@@ -60,30 +93,24 @@ export default function BindingPage() {
             // Step 1: Get provisioning token
             const token = await getProvisioningToken();
             console.log("Got provisioning token:", token);
+            setToken(token);
 
             // Step 2: Send WiFi credentials to endpoint
             const success = await sendWiFiCredentialsToEndpoint(ssid, password, token);
 
             if (success) {
-                Alert.alert("Success", "Device binding started successfully!", [
-                    {
-                        text: "OK",
-                        onPress: () => router.back()
-                    }
-                ]);
+                console.log("WiFi credentials sent, waiting for device to connect...");
+                // Now we wait for WebSocket message "new_device_connected"
+                setIsWaitingForDevice(true);
+                // Keep isBinding true to show loading state
             } else {
                 throw new Error("Failed to send WiFi credentials to endpoint");
             }
         } catch (error) {
             console.error("Binding error:", error);
-            Alert.alert("Error", "Failed to bind device. Please try again.", [
-                {
-                    text: "OK",
-                    onPress: () => router.back()
-                }
-            ]);
-        } finally {
+            Alert.alert("Error", "Failed to bind device. Please try again.");
             setIsBinding(false);
+            setIsWaitingForDevice(false);
         }
     };
 
@@ -109,7 +136,7 @@ export default function BindingPage() {
                 <View style={styles.statusRow}>
                     <Text style={styles.statusLabel}>Endpoint AP Status:</Text>
                     <View style={styles.statusIndicator}>
-                        <View style={[styles.statusDot, {backgroundColor: getConnectionStatusColor()}]} />
+                        <View style={[styles.statusDot, {backgroundColor: getConnectionStatusColor()}]}/>
                         <Text style={[styles.statusText, {color: getConnectionStatusColor()}]}>
                             {getConnectionStatusText()}
                         </Text>
@@ -153,7 +180,12 @@ export default function BindingPage() {
                     disabled={!isEndpointConnected || isBinding}
                 >
                     {isBinding ? (
-                        <ActivityIndicator color="white" />
+                        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                            <ActivityIndicator color="white"/>
+                            <Text style={[styles.bindButtonText, {marginLeft: 10}]}>
+                                {isWaitingForDevice ? 'Waiting for device...' : 'Sending credentials...'}
+                            </Text>
+                        </View>
                     ) : (
                         <Text style={styles.bindButtonText}>
                             {isEndpointConnected ? 'Start Binding' : 'Waiting for Connection...'}
