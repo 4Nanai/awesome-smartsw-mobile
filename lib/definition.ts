@@ -10,7 +10,7 @@ export interface UserRegisterDTO {
 }
 
 export interface UserMessageDTO {
-    type: "user_auth" | "user_command" | "auth_success" | "endpoint_state"  | "query_endpoint_state",
+    type: "user_auth" | "user_command" | "auth_success" | "new_device_connected" | "endpoint_state"  | "query_endpoint_state",
     payload?: {
         uniqueHardwareId?: string,
         token?: string,

@@ -4,6 +4,8 @@ import {router} from "expo-router";
 import {DeviceDTO, UserLoginDTO, UserRegisterDTO} from "@/lib/definition";
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.example.com';
+const ENDPOINT_URL = process.env.EXPO_PUBLIC_ENDPOINT_URL || 'https://endpoint.example.com';
+
 
 const apiClient = axios.create({
     baseURL: BASE_URL,
@@ -52,7 +54,7 @@ const loginApi = async (username: string, password: string) => {
         password,
     }
     try {
-        const response = await apiClient.post<{message: string, token: string}>('/user/login', userLoginDTO);
+        const response = await apiClient.post<{ message: string, token: string }>('/user/login', userLoginDTO);
         await AsyncStorage.setItem("user-token", response.data.token);
         return response.data.message;
     } catch (error) {
@@ -68,7 +70,7 @@ const registerApi = async (username: string, email: string, password: string) =>
         password,
     }
     try {
-        const response = await apiClient.post<{message: string}>('/user/register', userRegisterDTO);
+        const response = await apiClient.post<{ message: string }>('/user/register', userRegisterDTO);
         return response.data.message;
     } catch (error) {
         console.log("Register API Error:", error);
@@ -86,4 +88,47 @@ const getAllDevicesApi = async () => {
     }
 }
 
-export { loginApi, registerApi, getAllDevicesApi };
+const verifyEndpointAPConnection = async () => {
+    try {
+        const response = await fetch(`${ENDPOINT_URL}`, {
+            method: 'GET',
+        });
+        return response.ok;
+    } catch (error) {
+        console.log("Endpoint not connected yet.");
+        return false;
+    }
+}
+
+const getProvisioningToken = async () => {
+    try {
+        const response = await apiClient.get<{ token: string }>("/device/binding");
+        return response.data.token;
+    } catch (error) {
+        console.log("Error getting provisioning token:", error);
+        throw error;
+    }
+}
+
+const sendWiFiCredentialsToEndpoint = async (ssid: string, password: string, token: string) => {
+    try {
+        const response = await fetch(`${ENDPOINT_URL}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ssid,
+                password,
+                encryption_type: "wpa2-psk",
+                provisioning_token: token,
+            }),
+        });
+        return response.ok;
+    } catch (error) {
+        console.log("Error sending WiFi credentials to endpoint:", error);
+        return false;
+    }
+}
+
+export {loginApi, registerApi, getAllDevicesApi, verifyEndpointAPConnection, getProvisioningToken, sendWiFiCredentialsToEndpoint};
