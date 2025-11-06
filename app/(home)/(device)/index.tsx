@@ -67,7 +67,7 @@ export default function HomePage() {
             if (isAuthenticated) {
                 fetchDevices();
             }
-        }, [])
+        }, [isAuthenticated])
     );
 
     const handleLogout = async () => {
