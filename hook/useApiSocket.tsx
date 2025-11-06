@@ -27,7 +27,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({chil
     const handlersRef = useRef<Map<string, MessageHandlers>>(new Map());
 
     const {sendMessage, lastMessage, readyState} = useWebSocket(WS_BASE_URL, {
-        shouldReconnect: () => false,
+        shouldReconnect: () => true,
         onOpen: async () => {
             console.log('WebSocket connection established. Authenticating...');
             const token = await AsyncStorage.getItem("user-token");
