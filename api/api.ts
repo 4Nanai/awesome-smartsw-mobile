@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {router} from "expo-router";
-import {DeviceDTO, UserLoginDTO, UserRegisterDTO} from "@/lib/definition";
+import {DeviceDTO, DeviceUpdateAliasDTO, UserLoginDTO, UserRegisterDTO} from "@/lib/definition";
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.example.com';
 const ENDPOINT_URL = process.env.EXPO_PUBLIC_ENDPOINT_URL || 'https://endpoint.example.com';
@@ -131,4 +131,26 @@ const sendWiFiCredentialsToEndpoint = async (ssid: string, password: string, tok
     }
 }
 
-export {loginApi, registerApi, getAllDevicesApi, verifyEndpointAPConnection, getProvisioningToken, sendWiFiCredentialsToEndpoint};
+const updateDeviceAliasApi = async (uniqueHardwareId: string, alias: string) => {
+    try {
+        const updateAliasDTO: DeviceUpdateAliasDTO = {
+            unique_hardware_id: uniqueHardwareId,
+            alias,
+        }
+        const response = await apiClient.put<{ message: string }>('/device/manage', updateAliasDTO);
+        return response.data.message;
+    } catch (error) {
+        console.log("Update Device Alias API Error:", error);
+        throw error;
+    }
+}
+
+export {
+    loginApi,
+    registerApi,
+    getAllDevicesApi,
+    verifyEndpointAPConnection,
+    getProvisioningToken,
+    sendWiFiCredentialsToEndpoint,
+    updateDeviceAliasApi,
+};
