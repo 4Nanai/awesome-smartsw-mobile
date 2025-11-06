@@ -16,9 +16,9 @@ export interface UserMessageDTO {
         token?: string,
         state?: "on" | "off" | "online" | "offline" | "error",
         command?: {
-            type: string,
+            type: "toggle" | string,
             state?: boolean,
-            data?: boolean,
+            data?: string,
         },
         [key: string]: any,
     },
@@ -29,4 +29,9 @@ export interface DeviceDTO {
     unique_hardware_id: string,
     alias: string | null,
     status: "on" | "off" | "online" | "offline" | "error",
+}
+
+export interface DeviceUpdateAliasDTO {
+    unique_hardware_id: string,
+    alias: string,
 }

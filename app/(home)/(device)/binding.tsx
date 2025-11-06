@@ -90,12 +90,12 @@ export default function BindingPage() {
         setIsBinding(true);
 
         try {
-            // Step 1: Get provisioning token
+            // Get provisioning token
             const token = await getProvisioningToken();
             console.log("Got provisioning token:", token);
             setToken(token);
 
-            // Step 2: Send WiFi credentials to endpoint
+            // Send WiFi credentials to endpoint
             const success = await sendWiFiCredentialsToEndpoint(ssid, password, token);
 
             if (success) {

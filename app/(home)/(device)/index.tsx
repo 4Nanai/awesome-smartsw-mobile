@@ -2,11 +2,10 @@ import {Pressable, Text, View, StyleSheet, FlatList} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {useApiSocket} from "@/hook/useApiSocket";
 import {ReadyState} from 'react-use-websocket';
-import {useRouter} from "expo-router";
-import {useState, useEffect} from "react";
+import {useFocusEffect, useRouter} from "expo-router";
+import {useState, useEffect, useCallback} from "react";
 import {DeviceDTO, UserMessageDTO} from "@/lib/definition";
 import {getAllDevicesApi} from "@/api/api";
-import {getAllDevicesMockApi} from "@/api/mockApi";
 
 export default function HomePage() {
     const router = useRouter();
@@ -41,11 +40,7 @@ export default function HomePage() {
             setLoading(true);
             const devices = await getAllDevicesApi();
             console.log('Fetched devices:', devices);
-            if (!devices || devices.length === 0) {
-                // mock data
-                const mockDevices: DeviceDTO[] = await getAllDevicesMockApi();
-                setDevices(mockDevices);
-            } else {
+            if (devices.length !== 0) {
                 setDevices(devices);
                 if (readyState === ReadyState.OPEN && isAuthenticated) {
                     const message: UserMessageDTO = {
@@ -67,6 +62,14 @@ export default function HomePage() {
         }
     }, [isAuthenticated]);
 
+    useFocusEffect(
+        useCallback(() => {
+            if (isAuthenticated) {
+                fetchDevices();
+            }
+        }, [])
+    );
+
     const handleLogout = async () => {
         await AsyncStorage.removeItem("user-token");
         router.replace("/(login)");
@@ -78,7 +81,7 @@ export default function HomePage() {
 
     const handleDevicePress = (device: DeviceDTO) => {
         console.log('Navigate to device:', device.unique_hardware_id);
-        router.push(`/(home)/(device)/device/${device.unique_hardware_id}/`);
+        router.push(`/(home)/(device)/device/${device.unique_hardware_id}?state=${device.status}&alias=${device.alias}`);
     };
 
     const handleBindNewDevice = () => {
