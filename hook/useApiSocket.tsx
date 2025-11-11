@@ -9,6 +9,7 @@ interface MessageHandlers {
     onEndpointStateChange?: (message: UserMessageDTO) => void;
     onNewDeviceConnected?: (message: UserMessageDTO) => void;
     onAuthSuccess?: (message: UserMessageDTO) => void;
+    onAuthFailure?: (message: UserMessageDTO) => void;
 }
 
 interface WebSocketContextType {
@@ -77,6 +78,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({chil
                     });
                 }
 
+                if (data.type === 'auth_failure') {
+                    console.error('WebSocket authentication failed:', data.message);
+                    setIsAuthenticated(false);
+                    handlersRef.current.forEach((handlers) => {
+                        if (handlers.onAuthFailure) {
+                            handlers.onAuthFailure(data);
+                        }
+                    })
+                }
+
                 if (data.type === 'endpoint_state') {
                     console.log('Received endpoint state change:', data.payload);
                     // Notify all registered handlers
@@ -121,7 +132,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({chil
 
 export const useApiSocket = (handlers?: MessageHandlers) => {
     const context = useContext(WebSocketContext);
-    const handlerIdRef = useRef<string>(`handler-${Math.random().toString(36).substr(2, 9)}`);
+    const handlerIdRef = useRef<string>(`handler-${Math.random().toString(36).substring(2, 12)}`);
 
     if (!context) {
         throw new Error('useApiSocket must be used within a WebSocketProvider');

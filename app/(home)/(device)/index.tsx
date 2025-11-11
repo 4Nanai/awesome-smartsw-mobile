@@ -1,4 +1,4 @@
-import {Pressable, Text, View, StyleSheet, FlatList} from "react-native";
+import {Pressable, Text, View, StyleSheet, FlatList, Alert} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {useApiSocket} from "@/hook/useApiSocket";
 import {ReadyState} from 'react-use-websocket';
@@ -26,13 +26,30 @@ export default function HomePage() {
         }
     };
 
+    const handleAuthFailure = (message: UserMessageDTO) => {
+        if (message.message) {
+            Alert.alert("Authentication Failed", message.message, [
+                {
+                    text: "OK",
+                    onPress: async () => {
+                        await AsyncStorage.removeItem("user-token");
+                        router.replace("/(login)");
+                    }
+                }
+            ]);
+        } else {
+            router.replace("/(login)");
+        }
+    }
+
     const {
         sendMessage,
         lastMessage,
         readyState,
         isAuthenticated
     } = useApiSocket({
-        onEndpointStateChange: handleEndpointStateUpdate
+        onEndpointStateChange: handleEndpointStateUpdate,
+        onAuthFailure: handleAuthFailure
     });
 
     const fetchDevices = async () => {
@@ -81,12 +98,12 @@ export default function HomePage() {
 
     const handleDevicePress = (device: DeviceDTO) => {
         console.log('Navigate to device:', device.unique_hardware_id);
-        router.push(`/(home)/(device)/device/${device.unique_hardware_id}?state=${device.status}&alias=${device.alias}`);
+        router.navigate(`/(home)/(device)/device/${device.unique_hardware_id}?state=${device.status}&alias=${device.alias}`);
     };
 
     const handleBindNewDevice = () => {
         console.log('Navigate to bind new device');
-        router.push('/(home)/(device)/binding');
+        router.navigate('/(home)/(device)/binding');
     };
 
     const connectionStatus = {
