@@ -145,6 +145,16 @@ const updateDeviceAliasApi = async (uniqueHardwareId: string, alias: string) => 
     }
 }
 
+const deleteDeviceApi = async (uniqueHardwareId: string) => {
+    try {
+        const response = await apiClient.delete<{ message: string }>(`/device/manage/${uniqueHardwareId}`);
+        return response.data.message;
+    } catch (error) {
+        console.log("Delete Device API Error:", error);
+        throw error;
+    }
+}
+
 export {
     loginApi,
     registerApi,
@@ -153,4 +163,5 @@ export {
     getProvisioningToken,
     sendWiFiCredentialsToEndpoint,
     updateDeviceAliasApi,
+    deleteDeviceApi,
 };

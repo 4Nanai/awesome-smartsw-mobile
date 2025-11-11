@@ -1,28 +1,38 @@
-import {Text, View, StyleSheet, Pressable, TextInput, Alert} from "react-native";
+import {Text, View, StyleSheet, Pressable, TextInput, Alert, Switch} from "react-native";
 import {useLocalSearchParams} from "expo-router/build/hooks";
 import {useApiSocket} from "@/hook/useApiSocket";
 import {UserMessageDTO} from "@/lib/definition";
 import {updateDeviceAliasApi} from "@/api/api";
 import {useState, useEffect} from "react";
 import {ReadyState} from "react-use-websocket";
-import {Stack} from "expo-router";
+import {Stack, useRouter} from "expo-router";
 
 export default function DevicePage() {
     const {id, state, alias} = useLocalSearchParams();
+    const router = useRouter();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
     const initialState = typeof state === 'string' ? state as "on" | "off" | "online" | "offline" | "error" : "error";
     const initialAlias = typeof alias === 'string' ? alias : uniqueHardwareId;
 
     const [currentState, setCurrentState] = useState<"on" | "off" | "online" | "offline" | "error">(initialState);
     const [currentAlias, setCurrentAlias] = useState<string>(initialAlias || '');
+    const [enableToggle, setEnableToggle] = useState(false);
+    const [toggleState, setToggleState] = useState(false);
     const [isEditingAlias, setIsEditingAlias] = useState(false);
     const [editedAlias, setEditedAlias] = useState(currentAlias);
 
     const handleEndpointStateUpdate = (message: UserMessageDTO) => {
         if (message.payload && message.payload.uniqueHardwareId === uniqueHardwareId && message.payload.state) {
             setCurrentState(message.payload.state);
+            if (message.payload.state === "on") {
+                setToggleState(true);
+            }
         }
     };
+
+    useEffect(() => {
+        setEnableToggle(currentState === "on" || currentState === "off");
+    }, [currentState]);
 
     const {sendMessage, readyState, isAuthenticated} = useApiSocket({
         onEndpointStateChange: handleEndpointStateUpdate
@@ -56,8 +66,8 @@ export default function DevicePage() {
     }
 
     const handleToggle = () => {
-        const newState = currentState === "on" || currentState === "online";
-        sendToggleMessage(!newState);
+        setToggleState(!toggleState);
+        sendToggleMessage(!toggleState);
     }
 
     const handleUpdateAlias = async () => {
@@ -80,6 +90,10 @@ export default function DevicePage() {
     const handleCancelEdit = () => {
         setEditedAlias(currentAlias);
         setIsEditingAlias(false);
+    }
+
+    const handleSetDevice = () => {
+        router.push(`/(home)/(device)/device/${uniqueHardwareId}/settings`);
     }
 
     const getStatusColor = (status: "on" | "off" | "online" | "offline" | "error") => {
@@ -105,11 +119,22 @@ export default function DevicePage() {
         [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
     }[readyState];
 
-    const isDeviceOn = currentState === "on" || currentState === "online";
+    const isDeviceOn = currentState === "on";
 
     return (
         <>
-            <Stack.Screen options={{headerTitle: currentAlias || 'Device Details'}}/>
+            <Stack.Screen options={{
+                headerTitle: currentAlias || 'Device Details',
+                headerRight: () => {
+                    return (
+                        <>
+                            <Pressable onPress={handleSetDevice} style={styles.settingsButton}>
+                                <Text style={styles.settingsButtonText}>Settings</Text>
+                            </Pressable>
+                        </>
+                    )
+                }
+            }}/>
             <View style={styles.container}>
                 <View style={styles.statusBar}>
                     <Text style={styles.statusTextSmall}>WebSocket: {connectionStatus}</Text>
@@ -162,29 +187,22 @@ export default function DevicePage() {
                     </View>
 
                     <View style={styles.card}>
-                        <Text style={styles.sectionTitle}>Current Status</Text>
-                        <View style={styles.statusDisplay}>
-                            <View style={[styles.statusDotLarge, {backgroundColor: getStatusColor(currentState)}]}/>
-                            <Text style={[styles.statusTextLarge, {color: getStatusColor(currentState)}]}>
-                                {currentState.toUpperCase()}
-                            </Text>
+                        <View style={styles.statusRow}>
+                            <Text style={[styles.sectionTitle, {marginBottom: 0}]}>Current Status</Text>
+                            <View style={styles.statusDisplay}>
+                                <View style={[styles.statusDotLarge, {backgroundColor: getStatusColor(currentState)}]}/>
+                                <Text style={[styles.statusTextLarge, {color: getStatusColor(currentState)}]}>
+                                    {currentState.toUpperCase()}
+                                </Text>
+                            </View>
                         </View>
                     </View>
 
                     <View style={styles.card}>
-                        <Text style={styles.sectionTitle}>Control</Text>
-                        <Pressable
-                            style={({pressed}) => [
-                                styles.toggleButton,
-                                {backgroundColor: isDeviceOn ? '#4CAF50' : '#9E9E9E'},
-                                pressed && {opacity: 0.7}
-                            ]}
-                            onPress={handleToggle}
-                            disabled={readyState !== ReadyState.OPEN || !isAuthenticated}>
-                            <Text style={styles.toggleButtonText}>
-                                {isDeviceOn ? 'TURN OFF' : 'TURN ON'}
-                            </Text>
-                        </Pressable>
+                        <View style={styles.controlRow}>
+                            <Text style={[styles.sectionTitle, {marginBottom: 0}]}>Control</Text>
+                            <Switch disabled={readyState !== ReadyState.OPEN || !isAuthenticated || !enableToggle} value={toggleState} onValueChange={handleToggle} />
+                        </View>
                         {(readyState !== ReadyState.OPEN || !isAuthenticated) && (
                             <Text style={styles.warningText}>
                                 WebSocket not connected. Please check your connection.
@@ -336,16 +354,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 20,
     },
     statusDotLarge: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        marginRight: 10,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginRight: 5,
     },
     statusTextLarge: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 'bold',
     },
     toggleButton: {
@@ -388,5 +405,24 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: '#1976d2',
     },
+    controlRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    statusRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    settingsButton: {
+        paddingVertical: 5,
+        paddingHorizontal: 8,
+    },
+    settingsButtonText: {
+        color: 'black',
+        fontSize: 16,
+        fontWeight: '600',
+    }
 });
 
