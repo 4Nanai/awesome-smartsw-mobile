@@ -65,6 +65,8 @@ export default function HomePage() {
                     }
                     sendMessage(JSON.stringify(message));
                 }
+            } else {
+                setDevices([]);
             }
             setLoading(false);
         } catch (error) {
