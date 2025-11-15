@@ -7,7 +7,6 @@ const WS_BASE_URL = process.env.EXPO_PUBLIC_WEBSOCKET_URL || "ws://your-default-
 
 interface MessageHandlers {
     onEndpointStateChange?: (message: UserMessageDTO) => void;
-    onNewDeviceConnected?: (message: UserMessageDTO) => void;
     onAuthSuccess?: (message: UserMessageDTO) => void;
     onAuthFailure?: (message: UserMessageDTO) => void;
 }
@@ -97,17 +96,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({chil
                         }
                     });
                 }
-
-                if (data.type === 'new_device_connected') {
-                    console.log('New device connected:', data.payload);
-                    // Notify all registered handlers
-                    handlersRef.current.forEach((handlers) => {
-                        if (handlers.onNewDeviceConnected) {
-                            handlers.onNewDeviceConnected(data);
-                        }
-                    });
-                }
-
             } catch (e) {
                 console.error('Error parsing WebSocket message:', e);
             }

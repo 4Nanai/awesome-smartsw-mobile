@@ -3,7 +3,6 @@ import {useState, useEffect, useRef} from "react";
 import {useRouter} from "expo-router";
 import {verifyEndpointAPConnection, getProvisioningToken, sendWiFiCredentialsToEndpoint} from "@/api/api";
 import {useApiSocket} from "@/hook/useApiSocket";
-import {UserMessageDTO} from "@/lib/definition";
 
 export default function BindingPage() {
     const router = useRouter();
@@ -13,39 +12,11 @@ export default function BindingPage() {
     const [isEndpointConnected, setIsEndpointConnected] = useState(false);
     const [isBinding, setIsBinding] = useState(false);
     const [isChecking, setIsChecking] = useState(true);
-    const [isWaitingForDevice, setIsWaitingForDevice] = useState(false);
-    const [token, setToken] = useState("");
 
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // WebSocket handler for new device connection
-    const handleNewDeviceConnected = (message: UserMessageDTO) => {
-        console.log("New device connected event received:", message);
-        if (message.payload?.token !== token) {
-            console.log("Token mismatch, ignoring this device connection.");
-            setIsWaitingForDevice(false);
-            setIsBinding(false);
-            Alert.alert("Error", "Received device connection with invalid token. Please try again.", [
-                {
-                    text: "OK",
-                    onPress: () => router.back()
-                }
-            ]);
-            return;
-        }
-        setIsWaitingForDevice(false);
-        setIsBinding(false);
-
-        Alert.alert("Success", "Device binding completed successfully!", [
-            {
-                text: "OK",
-                onPress: () => router.back()
-            }
-        ]);
-    };
-
     // Initialize WebSocket connection
-    useApiSocket({onNewDeviceConnected: handleNewDeviceConnected});
+    useApiSocket();
 
     // Check endpoint AP connection every 1 second
     useEffect(() => {
@@ -93,16 +64,19 @@ export default function BindingPage() {
             // Get provisioning token
             const token = await getProvisioningToken();
             console.log("Got provisioning token:", token);
-            setToken(token);
 
             // Send WiFi credentials to endpoint
             const success = await sendWiFiCredentialsToEndpoint(ssid, password, token);
 
             if (success) {
-                console.log("WiFi credentials sent, waiting for device to connect...");
-                // Now we wait for WebSocket message "new_device_connected"
-                setIsWaitingForDevice(true);
-                // Keep isBinding true to show loading state
+                console.log("WiFi credentials sent, binding completed.");
+                setIsBinding(false);
+                Alert.alert("Success", "Device binding completed successfully.", [
+                    {
+                        text: "OK",
+                        onPress: () => router.back(),
+                    },
+                ]);
             } else {
                 throw new Error("Failed to send WiFi credentials to endpoint");
             }
@@ -110,7 +84,6 @@ export default function BindingPage() {
             console.error("Binding error:", error);
             Alert.alert("Error", "Failed to bind device. Please try again.");
             setIsBinding(false);
-            setIsWaitingForDevice(false);
         }
     };
 
@@ -183,7 +156,7 @@ export default function BindingPage() {
                         <View style={{flexDirection: 'row', alignItems: 'center'}}>
                             <ActivityIndicator color="white"/>
                             <Text style={[styles.bindButtonText, {marginLeft: 10}]}>
-                                {isWaitingForDevice ? 'Waiting for device...' : 'Sending credentials...'}
+                                {'Sending credentials...'}
                             </Text>
                         </View>
                     ) : (
