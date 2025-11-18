@@ -12,6 +12,29 @@ export default function BindingPage() {
     const [isEndpointConnected, setIsEndpointConnected] = useState(false);
     const [isBinding, setIsBinding] = useState(false);
     const [isChecking, setIsChecking] = useState(true);
+    const [token, setToken] = useState("");
+
+    useEffect(() => {
+        const fetchToken = async () => {
+            try {
+                // Get provisioning token
+                const token = await getProvisioningToken();
+                console.log("Got provisioning token:", token);
+                setToken(token);
+            } catch (error) {
+                console.error("Error fetching provisioning token:", error);
+                Alert.alert("Error", "Failed to get provisioning token. Please try again.", [
+                    {
+                        text: "OK",
+                        onPress: () => {
+                            router.back();
+                        }
+                    }
+                ]);
+            }
+        }
+        void fetchToken();
+    }, []);
 
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -53,18 +76,14 @@ export default function BindingPage() {
             return;
         }
 
-        if (!password.trim()) {
-            Alert.alert("Error", "Please enter WiFi password");
-            return;
-        }
+        // if (!password.trim()) {
+        //     Alert.alert("Error", "Please enter WiFi password");
+        //     return;
+        // }
 
         setIsBinding(true);
 
         try {
-            // Get provisioning token
-            const token = await getProvisioningToken();
-            console.log("Got provisioning token:", token);
-
             // Send WiFi credentials to endpoint
             const success = await sendWiFiCredentialsToEndpoint(ssid, password, token);
 

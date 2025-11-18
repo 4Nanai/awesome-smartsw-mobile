@@ -120,7 +120,6 @@ const sendWiFiCredentialsToEndpoint = async (ssid: string, password: string, tok
             body: JSON.stringify({
                 ssid,
                 password,
-                encryption_type: "wpa2-psk",
                 provisioning_token: token,
             }),
         });
