@@ -1,20 +1,20 @@
-import {Text, View, StyleSheet, Pressable, TextInput, Alert, Switch} from "react-native";
-import {useLocalSearchParams} from "expo-router/build/hooks";
-import {useApiSocket} from "@/hook/useApiSocket";
-import {UserMessageDTO} from "@/lib/definition";
-import {updateDeviceAliasApi} from "@/api/api";
-import {useState, useEffect} from "react";
-import {ReadyState} from "react-use-websocket";
-import {Stack, useRouter} from "expo-router";
+import { updateDeviceAliasApi } from "@/api/api";
+import { useApiSocket } from "@/hook/useApiSocket";
+import { UserMessageDTO } from "@/lib/definition";
+import { Stack, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router/build/hooks";
+import { useEffect, useState } from "react";
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { ReadyState } from "react-use-websocket";
 
 export default function DevicePage() {
     const {id, state, alias} = useLocalSearchParams();
     const router = useRouter();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
-    const initialState = typeof state === 'string' ? state as "on" | "off" | "online" | "offline" | "error" : "error";
+    const initialState = typeof state === 'string' ? state as "on" | "off" | "error" : "error";
     const initialAlias = typeof alias === 'string' ? alias : uniqueHardwareId;
 
-    const [currentState, setCurrentState] = useState<"on" | "off" | "online" | "offline" | "error">(initialState);
+    const [currentState, setCurrentState] = useState<"on" | "off" | "error">(initialState);
     const [currentAlias, setCurrentAlias] = useState<string>(initialAlias || '');
     const [enableToggle, setEnableToggle] = useState(false);
     const [toggleState, setToggleState] = useState(false);
@@ -96,16 +96,14 @@ export default function DevicePage() {
         router.push(`/(home)/(device)/device/${uniqueHardwareId}/settings`);
     }
 
-    const getStatusColor = (status: "on" | "off" | "online" | "offline" | "error") => {
+    const getStatusColor = (status: "on" | "off" | "error") => {
         switch (status) {
-            case "online":
-                return '#4CAF50';
-            case "offline":
-                return '#F44336';
             case "on":
                 return '#2196F3';
             case "off":
                 return '#9E9E9E';
+            case "error":
+                return '#F44336';
             default:
                 return '#757575';
         }

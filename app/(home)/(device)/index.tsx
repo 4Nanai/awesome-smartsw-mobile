@@ -1,11 +1,11 @@
-import {Pressable, Text, View, StyleSheet, FlatList, Alert} from "react-native";
+import { getAllDevicesApi } from "@/api/api";
+import { useApiSocket } from "@/hook/useApiSocket";
+import { DeviceDTO, UserMessageDTO } from "@/lib/definition";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {useApiSocket} from "@/hook/useApiSocket";
-import {ReadyState} from 'react-use-websocket';
-import {useFocusEffect, useRouter} from "expo-router";
-import {useState, useEffect, useCallback} from "react";
-import {DeviceDTO, UserMessageDTO} from "@/lib/definition";
-import {getAllDevicesApi} from "@/api/api";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ReadyState } from 'react-use-websocket';
 
 export default function HomePage() {
     const router = useRouter();
@@ -116,16 +116,14 @@ export default function HomePage() {
         [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
     }[readyState];
 
-    const getStatusColor = (status: "on" | "off" | "online" | "offline" | "error") => {
+    const getStatusColor = (status: "on" | "off" | "error") => {
         switch (status) {
-            case "online":
-                return '#4CAF50';
-            case "offline":
-                return '#F44336';
             case "on":
                 return '#2196F3';
             case "off":
                 return '#9E9E9E';
+            case "error":
+                return '#F44336';
             default:
                 return '#757575';
         }
