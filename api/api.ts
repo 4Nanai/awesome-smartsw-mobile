@@ -1,7 +1,15 @@
-import axios from 'axios';
+import {
+    DeviceDTO,
+    DeviceUpdateAliasDTO,
+    SetAutomationModeDTO,
+    SetPresenceModeDTO,
+    SetSoundModeDTO,
+    UserLoginDTO,
+    UserRegisterDTO
+} from "@/lib/definition";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {router} from "expo-router";
-import {DeviceDTO, DeviceUpdateAliasDTO, UserLoginDTO, UserRegisterDTO} from "@/lib/definition";
+import axios from 'axios';
+import { router } from "expo-router";
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.example.com';
 const ENDPOINT_URL = process.env.EXPO_PUBLIC_ENDPOINT_URL || 'https://endpoint.example.com';
@@ -56,6 +64,7 @@ const loginApi = async (username: string, password: string) => {
     try {
         const response = await apiClient.post<{ message: string, token: string }>('/user/login', userLoginDTO);
         await AsyncStorage.setItem("user-token", response.data.token);
+        await AsyncStorage.setItem("user-username", username);
         return response.data.message;
     } catch (error) {
         console.log("Login API Error:", error);
@@ -154,13 +163,62 @@ const deleteDeviceApi = async (uniqueHardwareId: string) => {
     }
 }
 
+const setAutomationModeApi = async (uniqueHardwareId: string, mode: "off" | "presence" | "sound" | "timer" | "ml") => {
+    try {
+        const setAutomationModeDTO: SetAutomationModeDTO = {
+            unique_hardware_id: uniqueHardwareId,
+            mode,
+        }
+        const response = await apiClient.post<{ message: string }>('/device/manage/config/automation-mode', setAutomationModeDTO);
+        return response.data.message;
+    } catch (error) {
+        console.log("Set Automation Mode API Error:", error);
+        throw error;
+    }
+}
+
+const setPresenceModeApi = async (uniqueHardwareId: string, mode: "pir_only" | "radar_only" | "fusion_or" | "fusion_and") => {
+    try {
+        const setPresenceModeDTO: SetPresenceModeDTO = {
+            unique_hardware_id: uniqueHardwareId,
+            mode,
+        }
+        const response = await apiClient.post<{ message: string }>('/device/manage/config/presence-mode', setPresenceModeDTO);
+        return response.data.message;
+    } catch (error) {
+        console.log("Set Presence Mode API Error:", error);
+        throw error;
+    }
+}
+
+const setSoundModeApi = async (uniqueHardwareId: string, mode: "noise" | "clap") => {
+    try {
+        const setSoundModeDTO: SetSoundModeDTO = {
+            unique_hardware_id: uniqueHardwareId,
+            mode,
+        }
+        const response = await apiClient.post<{ message: string }>('/device/manage/config/sound-mode', setSoundModeDTO);
+        return response.data.message;
+    } catch (error) {
+        console.log("Set Sound Mode API Error:", error);
+        throw error;
+    }
+}
+
+const getDeviceManageStatsApi = async () => {
+    try {
+        const response = await apiClient.get('/device/manage/stats');
+        return response.data;
+    } catch (error) {
+        console.log("Get Device Manage Stats API Error:", error);
+        throw error;
+    }
+}
+
 export {
-    loginApi,
-    registerApi,
-    getAllDevicesApi,
-    verifyEndpointAPConnection,
-    getProvisioningToken,
-    sendWiFiCredentialsToEndpoint,
-    updateDeviceAliasApi,
-    deleteDeviceApi,
+    deleteDeviceApi, getAllDevicesApi, getDeviceManageStatsApi, getProvisioningToken, loginApi,
+    registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi,
+    setPresenceModeApi,
+    setSoundModeApi, updateDeviceAliasApi, verifyEndpointAPConnection
 };
+

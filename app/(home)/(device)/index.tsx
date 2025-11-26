@@ -88,12 +88,6 @@ export default function HomePage() {
             }
         }, [isAuthenticated])
     );
-
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem("user-token");
-        router.replace("/(login)");
-    };
-
     const handleRefresh = async () => {
         fetchDevices();
     }
@@ -116,12 +110,14 @@ export default function HomePage() {
         [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
     }[readyState];
 
-    const getStatusColor = (status: "on" | "off" | "error") => {
+    const getStatusColor = (status: "on" | "off" | "unknown" | "error") => {
         switch (status) {
             case "on":
                 return '#2196F3';
             case "off":
                 return '#9E9E9E';
+            case "unknown":
+                return '#FFC107';
             case "error":
                 return '#F44336';
             default:
@@ -152,10 +148,6 @@ export default function HomePage() {
                 <Pressable onPress={handleRefresh}
                            style={({pressed}) => [styles.refreshButton, pressed && {opacity: 0.5}]}>
                     <Text style={styles.refreshText}>Refresh</Text>
-                </Pressable>
-                <Pressable onPress={handleLogout}
-                           style={({pressed}) => [styles.logoutButton, pressed && {opacity: 0.5}]}>
-                    <Text style={styles.logoutText}>Logout</Text>
                 </Pressable>
             </View>
 
@@ -218,23 +210,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
     },
-    logoutButton: {
-        backgroundColor: '#f44336',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 5,
-    },
     refreshButton: {
         backgroundColor: '#2196F3',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 5,
         marginLeft: 40,
-    },
-    logoutText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
     },
     refreshText: {
         color: 'white',
