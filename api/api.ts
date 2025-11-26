@@ -64,6 +64,7 @@ const loginApi = async (username: string, password: string) => {
     try {
         const response = await apiClient.post<{ message: string, token: string }>('/user/login', userLoginDTO);
         await AsyncStorage.setItem("user-token", response.data.token);
+        await AsyncStorage.setItem("user-username", username);
         return response.data.message;
     } catch (error) {
         console.log("Login API Error:", error);
