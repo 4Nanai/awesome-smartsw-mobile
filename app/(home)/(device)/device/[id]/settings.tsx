@@ -1,7 +1,8 @@
 import { deleteDeviceApi, setAutomationModeApi, setPresenceModeApi, setSoundModeApi } from "@/api/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router/build/hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Toast from 'react-native-toast-message';
 
@@ -21,6 +22,45 @@ export default function DeviceSettingPage() {
     const [loadingAutomation, setLoadingAutomation] = useState(false);
     const [loadingPresence, setLoadingPresence] = useState(false);
     const [loadingSound, setLoadingSound] = useState(false);
+    const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+
+    useEffect(() => {
+        loadSavedConfig();
+    }, [uniqueHardwareId]);
+
+    const getStorageKey = (configType: string) => {
+        return `device_config_${uniqueHardwareId}_${configType}`;
+    };
+
+    const loadSavedConfig = async () => {
+        if (!uniqueHardwareId) return;
+        
+        try {
+            const [savedAutomation, savedPresence, savedSound] = await Promise.all([
+                AsyncStorage.getItem(getStorageKey('automation')),
+                AsyncStorage.getItem(getStorageKey('presence')),
+                AsyncStorage.getItem(getStorageKey('sound')),
+            ]);
+
+            if (savedAutomation) setAutomationMode(savedAutomation as AutomationMode);
+            if (savedPresence) setPresenceMode(savedPresence as PresenceMode);
+            if (savedSound) setSoundMode(savedSound as SoundMode);
+        } catch (error) {
+            console.error("Error loading saved config:", error);
+        } finally {
+            setIsLoadingConfig(false);
+        }
+    };
+
+    const saveConfig = async (configType: string, value: string) => {
+        if (!uniqueHardwareId) return;
+        
+        try {
+            await AsyncStorage.setItem(getStorageKey(configType), value);
+        } catch (error) {
+            console.error("Error saving config:", error);
+        }
+    };
 
     const handleAutomationModeChange = async (newMode: AutomationMode) => {
         if (!uniqueHardwareId || loadingAutomation) return;
@@ -31,10 +71,11 @@ export default function DeviceSettingPage() {
         
         try {
             await setAutomationModeApi(uniqueHardwareId, newMode);
+            await saveConfig('automation', newMode);
             Toast.show({
                 type: 'success',
                 text1: 'Success',
-                text2: `Automation mode set to ${newMode}`,
+                text2: `Automation mode set to ${newMode === "ml" ? "Machine Learning" : newMode.charAt(0).toUpperCase() + newMode.slice(1)}`,
                 position: 'bottom',
             });
         } catch (error) {
@@ -60,6 +101,7 @@ export default function DeviceSettingPage() {
         
         try {
             await setPresenceModeApi(uniqueHardwareId, newMode);
+            await saveConfig('presence', newMode);
             Toast.show({
                 type: 'success',
                 text1: 'Success',
@@ -89,6 +131,7 @@ export default function DeviceSettingPage() {
         
         try {
             await setSoundModeApi(uniqueHardwareId, newMode);
+            await saveConfig('sound', newMode);
             Toast.show({
                 type: 'success',
                 text1: 'Success',
@@ -109,6 +152,21 @@ export default function DeviceSettingPage() {
         }
     };
 
+    const clearDeviceConfig = async () => {
+        if (!uniqueHardwareId) return;
+        
+        try {
+            await Promise.all([
+                AsyncStorage.removeItem(getStorageKey('automation')),
+                AsyncStorage.removeItem(getStorageKey('presence')),
+                AsyncStorage.removeItem(getStorageKey('sound')),
+            ]);
+            console.log("Device config cleared from AsyncStorage");
+        } catch (error) {
+            console.error("Error clearing device config:", error);
+        }
+    };
+
     const handleDeleteDevice = async () => {
         if (!uniqueHardwareId) {
             console.error("Invalid uniqueHardwareId");
@@ -118,6 +176,7 @@ export default function DeviceSettingPage() {
         try {
             const res = await deleteDeviceApi(uniqueHardwareId);
             console.log("Delete Device Response:", res);
+            await clearDeviceConfig();
             Alert.alert("Success", "Device unbound successfully", [
                 {
                     text: "OK",
@@ -158,6 +217,18 @@ export default function DeviceSettingPage() {
             </Text>
         </Pressable>
     );
+
+    if (isLoadingConfig) {
+        return (
+            <>
+                <Stack.Screen options={{headerBackTitle: "Device"}}/>
+                <View style={[styles.container, styles.loadingContainer]}>
+                    <ActivityIndicator size="large" color="#2196F3" />
+                    <Text style={styles.loadingText}>Loading settings...</Text>
+                </View>
+            </>
+        );
+    }
 
     return (
         <>
@@ -309,5 +380,15 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 16,
+        color: '#666',
     },
 });
