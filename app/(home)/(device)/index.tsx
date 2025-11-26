@@ -110,12 +110,14 @@ export default function HomePage() {
         [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
     }[readyState];
 
-    const getStatusColor = (status: "on" | "off" | "error") => {
+    const getStatusColor = (status: "on" | "off" | "unknown" | "error") => {
         switch (status) {
             case "on":
                 return '#2196F3';
             case "off":
                 return '#9E9E9E';
+            case "unknown":
+                return '#FFC107';
             case "error":
                 return '#F44336';
             default:

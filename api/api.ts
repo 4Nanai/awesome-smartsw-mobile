@@ -205,8 +205,18 @@ const setSoundModeApi = async (uniqueHardwareId: string, mode: "noise" | "clap")
     }
 }
 
+const getDeviceManageStatsApi = async () => {
+    try {
+        const response = await apiClient.get('/device/manage/stats');
+        return response.data;
+    } catch (error) {
+        console.log("Get Device Manage Stats API Error:", error);
+        throw error;
+    }
+}
+
 export {
-    deleteDeviceApi, getAllDevicesApi, getProvisioningToken, loginApi,
+    deleteDeviceApi, getAllDevicesApi, getDeviceManageStatsApi, getProvisioningToken, loginApi,
     registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi,
     setPresenceModeApi,
     setSoundModeApi, updateDeviceAliasApi, verifyEndpointAPConnection

@@ -28,7 +28,7 @@ export interface UserMessageDTO {
 export interface DeviceDTO {
     unique_hardware_id: string,
     alias: string | null,
-    status: "on" | "off" | "error",
+    status: "on" | "off" | "unknown" | "error",
 }
 
 export interface DeviceUpdateAliasDTO {
