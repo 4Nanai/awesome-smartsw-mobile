@@ -12,8 +12,9 @@ type SoundMode = "noise" | "clap";
 
 export default function DeviceSettingPage() {
     const router = useRouter();
-    const {id} = useLocalSearchParams();
+    const {id, state} = useLocalSearchParams();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
+    const deviceState = typeof state === 'string' ? state as "on" | "off" | "error" : "error";
 
     const [automationMode, setAutomationMode] = useState<AutomationMode>("off");
     const [presenceMode, setPresenceMode] = useState<PresenceMode>("pir_only");
@@ -23,6 +24,8 @@ export default function DeviceSettingPage() {
     const [loadingPresence, setLoadingPresence] = useState(false);
     const [loadingSound, setLoadingSound] = useState(false);
     const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+    
+    const isDeviceError = deviceState === "error";
 
     useEffect(() => {
         loadSavedConfig();
@@ -235,6 +238,14 @@ export default function DeviceSettingPage() {
             <Stack.Screen options={{headerBackTitle: "Device"}}/>
             <ScrollView style={styles.container}>
                 <View style={styles.content}>
+                    {isDeviceError && (
+                        <View style={styles.warningCard}>
+                            <Text style={styles.warningTitle}>⚠️ Device Error</Text>
+                            <Text style={styles.warningMessage}>
+                                The device is currently in an error state. Settings cannot be modified. Please check the device connection and refresh the status on the device details page.
+                            </Text>
+                        </View>
+                    )}
                     <View style={styles.card}>
                         <View style={styles.sectionHeader}>
                             <Text style={styles.sectionTitle}>Automation Mode</Text>
@@ -247,7 +258,7 @@ export default function DeviceSettingPage() {
                                     mode === "ml" ? "Machine Learning" : mode.charAt(0).toUpperCase() + mode.slice(1),
                                     automationMode === mode,
                                     () => handleAutomationModeChange(mode),
-                                    loadingAutomation
+                                    loadingAutomation || isDeviceError
                                 )
                             )}
                         </View>
@@ -265,7 +276,7 @@ export default function DeviceSettingPage() {
                                     mode.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
                                     presenceMode === mode,
                                     () => handlePresenceModeChange(mode),
-                                    loadingPresence
+                                    loadingPresence || isDeviceError
                                 )
                             )}
                         </View>
@@ -283,7 +294,7 @@ export default function DeviceSettingPage() {
                                     mode.charAt(0).toUpperCase() + mode.slice(1),
                                     soundMode === mode,
                                     () => handleSoundModeChange(mode),
-                                    loadingSound
+                                    loadingSound || isDeviceError
                                 )
                             )}
                         </View>
@@ -390,5 +401,24 @@ const styles = StyleSheet.create({
         marginTop: 12,
         fontSize: 16,
         color: '#666',
+    },
+    warningCard: {
+        backgroundColor: '#FFF3E0',
+        padding: 16,
+        marginBottom: 15,
+        borderRadius: 10,
+        borderLeftWidth: 4,
+        borderLeftColor: '#FF9800',
+    },
+    warningTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#E65100',
+        marginBottom: 8,
+    },
+    warningMessage: {
+        fontSize: 14,
+        color: '#E65100',
+        lineHeight: 20,
     },
 });

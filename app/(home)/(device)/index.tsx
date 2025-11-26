@@ -11,6 +11,7 @@ export default function HomePage() {
     const router = useRouter();
     const [devices, setDevices] = useState<DeviceDTO[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     const handleEndpointStateUpdate = (message: UserMessageDTO) => {
         if (message.payload && message.payload.uniqueHardwareId && message.payload.state) {
@@ -52,9 +53,13 @@ export default function HomePage() {
         onAuthFailure: handleAuthFailure
     });
 
-    const fetchDevices = async () => {
+    const fetchDevices = async (isRefresh = false) => {
         try {
-            setLoading(true);
+            if (isRefresh) {
+                setRefreshing(true);
+            } else {
+                setLoading(true);
+            }
             const devices = await getAllDevicesApi();
             console.log('Fetched devices:', devices);
             if (devices.length !== 0) {
@@ -69,9 +74,11 @@ export default function HomePage() {
                 setDevices([]);
             }
             setLoading(false);
+            setRefreshing(false);
         } catch (error) {
             console.error('Failed to fetch devices:', error);
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -84,12 +91,13 @@ export default function HomePage() {
     useFocusEffect(
         useCallback(() => {
             if (isAuthenticated) {
-                fetchDevices();
+                // Only show loading state when there's no device data
+                fetchDevices(devices.length > 0);
             }
         }, [isAuthenticated])
     );
     const handleRefresh = async () => {
-        fetchDevices();
+        fetchDevices(true);
     }
 
     const handleDevicePress = (device: DeviceDTO) => {
@@ -161,11 +169,14 @@ export default function HomePage() {
             )}
 
             <View style={styles.content}>
-                {loading ? (
+                {loading && devices.length === 0 ? (
                     <Text style={styles.loadingText}>Loading devices...</Text>
                 ) : devices.length > 0 ? (
                     <>
-                        <Text style={styles.sectionTitle}>My Devices ({devices.length})</Text>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>My Devices ({devices.length})</Text>
+                            {refreshing && <Text style={styles.refreshingText}>Refreshing...</Text>}
+                        </View>
                         <FlatList
                             data={devices}
                             renderItem={renderDeviceItem}
@@ -254,11 +265,21 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
     },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+    },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 15,
+    },
+    refreshingText: {
+        fontSize: 12,
+        color: '#2196F3',
+        fontStyle: 'italic',
     },
     devicesList: {
         flex: 1,

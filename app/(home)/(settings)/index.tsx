@@ -1,8 +1,9 @@
 import { getDeviceManageStatsApi } from "@/api/api";
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import Toast from "react-native-toast-message";
 
@@ -21,8 +22,13 @@ export default function SettingsPage() {
 
     useEffect(() => {
         loadUsername();
-        loadDeviceStats();
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadDeviceStats();
+        }, [])
+    );
 
     const loadUsername = async () => {
         try {
