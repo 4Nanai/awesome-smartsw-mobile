@@ -35,3 +35,18 @@ export interface DeviceUpdateAliasDTO {
     unique_hardware_id: string,
     alias: string,
 }
+
+export interface SetAutomationModeDTO {
+    unique_hardware_id: string,
+    mode: "off" | "presence" | "sound" | "timer" | "ml",
+}
+
+export interface SetPresenceModeDTO {
+    unique_hardware_id: string,
+    mode: "pir_only" | "radar_only" | "fusion_or" | "fusion_and",
+}
+
+export interface SetSoundModeDTO {
+    unique_hardware_id: string,
+    mode: "noise" | "clap",
+}

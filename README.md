@@ -17,3 +17,5 @@ cp .env.example .env
 ```shell
 npx expo start
 ```
+
+## [Websocket Message Body](https://github.com/4Nanai/awesome-smartsw-server?tab=readme-ov-file#websocket-message-body)
