@@ -53,12 +53,12 @@ export default function DevicePage() {
     const sendToggleMessage = (newState: boolean) => {
         if (uniqueHardwareId === null) return;
         const message: UserMessageDTO = {
-            type: "user_command",
+            type: "set_endpoint_state",
             payload: {
                 uniqueHardwareId: uniqueHardwareId,
                 command: {
-                    type: "toggle",
                     state: newState,
+                    from: "user",
                 }
             }
         };

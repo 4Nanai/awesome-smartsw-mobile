@@ -10,15 +10,15 @@ export interface UserRegisterDTO {
 }
 
 export interface UserMessageDTO {
-    type: "user_auth" | "user_command" | "auth_success" | "auth_failure" | "new_device_connected" | "endpoint_state"  | "query_endpoint_state",
+    type: "user_auth" | "set_endpoint_state" | "auth_success" | "auth_failure" | "new_device_connected" | "endpoint_state"  | "query_endpoint_state",
     payload?: {
         uniqueHardwareId?: string,
         token?: string,
         state?: "on" | "off" | "error",
         command?: {
-            type: "toggle" | string,
             state?: boolean,
             data?: string,
+            from?: "user" | "ml",
         },
         [key: string]: any,
     },
