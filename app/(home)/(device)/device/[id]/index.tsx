@@ -4,10 +4,12 @@ import { UserMessageDTO } from "@/lib/definition";
 import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router/build/hooks";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, useColorScheme, View } from "react-native";
 import { ReadyState } from "react-use-websocket";
 
 export default function DevicePage() {
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
     const {id, state, alias} = useLocalSearchParams();
     const router = useRouter();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
@@ -62,6 +64,7 @@ export default function DevicePage() {
                 }
             }
         };
+        console.log("Toggle triggered:", message);
         sendMessage(JSON.stringify(message));
     }
 
@@ -127,7 +130,7 @@ export default function DevicePage() {
                     return (
                         <>
                             <Pressable onPress={handleSetDevice} style={styles.settingsButton}>
-                                <Text style={styles.settingsButtonText}>Settings</Text>
+                                <Text style={[styles.settingsButtonText, isDark && { color: 'white' }]}>Settings</Text>
                             </Pressable>
                         </>
                     )

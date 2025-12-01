@@ -50,3 +50,11 @@ export interface SetSoundModeDTO {
     unique_hardware_id: string,
     mode: "noise" | "clap",
 }
+
+export interface MQTTConfigDTO {
+    broker_url: string;
+    port: number;
+    username?: string;
+    password?: string;
+    client_id?: string;
+}

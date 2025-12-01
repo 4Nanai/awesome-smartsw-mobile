@@ -1,6 +1,7 @@
 import {
     DeviceDTO,
     DeviceUpdateAliasDTO,
+    MQTTConfigDTO,
     SetAutomationModeDTO,
     SetPresenceModeDTO,
     SetSoundModeDTO,
@@ -215,10 +216,19 @@ const getDeviceManageStatsApi = async () => {
     }
 }
 
+const setMQTTConfigApi = async (uniqueHardwareId: string, config: MQTTConfigDTO) => {
+    try {
+        const response = await apiClient.post<{ message: string }>(`/device/manage/${uniqueHardwareId}/mqtt-config`, config);
+        return response.data.message;
+    } catch (error) {
+        console.log("Set MQTT Config API Error:", error);
+        throw error;
+    }
+}
+
 export {
     deleteDeviceApi, getAllDevicesApi, getDeviceManageStatsApi, getProvisioningToken, loginApi,
-    registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi,
-    setPresenceModeApi,
+    registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi, setMQTTConfigApi, setPresenceModeApi,
     setSoundModeApi, updateDeviceAliasApi, verifyEndpointAPConnection
 };
 
