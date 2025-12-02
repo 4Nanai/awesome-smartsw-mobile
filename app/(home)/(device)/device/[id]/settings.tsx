@@ -13,7 +13,7 @@ type SoundMode = "noise" | "clap";
 
 export default function DeviceSettingPage() {
     const router = useRouter();
-    const {id, state} = useLocalSearchParams();
+    const {id, state, alias} = useLocalSearchParams();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
     const deviceState = typeof state === 'string' ? state as "on" | "off" | "error" : "error";
 
@@ -196,7 +196,7 @@ export default function DeviceSettingPage() {
     };
 
     const handleConnectToHomeAssistant = () => {
-        router.push(`/(home)/(device)/device/${uniqueHardwareId}/mqtt?state=${deviceState}`);
+        router.push(`/(home)/(device)/device/${uniqueHardwareId}/mqtt?state=${deviceState}&alias=${alias}`);
     };
 
     const renderModeButton = (

@@ -96,7 +96,7 @@ export default function DevicePage() {
     }
 
     const handleSetDevice = () => {
-        router.push(`/(home)/(device)/device/${uniqueHardwareId}/settings?state=${currentState}`);
+        router.push(`/(home)/(device)/device/${uniqueHardwareId}/settings?state=${currentState}&alias=${currentAlias}`);
     }
 
     const getStatusColor = (status: "on" | "off" | "error") => {

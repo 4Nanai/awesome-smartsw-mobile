@@ -4,12 +4,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router/build/hooks";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import Toast from 'react-native-toast-message';
 
 export default function MQTTConfigPage() {
     const router = useRouter();
-    const {id, state} = useLocalSearchParams();
+    const { id, state, alias }: { id?: string; state?: string; alias?: string } = useLocalSearchParams();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
     const deviceState = typeof state === 'string' ? state as "on" | "off" | "error" : "error";
 
@@ -19,6 +19,8 @@ export default function MQTTConfigPage() {
         username: '',
         password: '',
         client_id: '',
+        topic_prefix: '',
+        device_name: '',
     });
 
     const [loading, setLoading] = useState(false);
@@ -38,20 +40,24 @@ export default function MQTTConfigPage() {
         if (!uniqueHardwareId) return;
 
         try {
-            const [savedBrokerUrl, savedPort, savedUsername, savedPassword, savedClientId] = await Promise.all([
+            const [savedBrokerUrl, savedPort, savedUsername, savedPassword, savedClientId, savedTopicPrefix, savedDeviceName] = await Promise.all([
                 AsyncStorage.getItem(getStorageKey('broker_url')),
                 AsyncStorage.getItem(getStorageKey('port')),
                 AsyncStorage.getItem(getStorageKey('username')),
                 AsyncStorage.getItem(getStorageKey('password')),
                 AsyncStorage.getItem(getStorageKey('client_id')),
+                AsyncStorage.getItem(getStorageKey('topic_prefix')),
+                AsyncStorage.getItem(getStorageKey('device_name')),
             ]);
 
             setMqttConfig({
+                device_name: savedDeviceName || alias || '',
                 broker_url: savedBrokerUrl || '',
                 port: savedPort ? parseInt(savedPort) : 1883,
                 username: savedUsername || '',
                 password: savedPassword || '',
                 client_id: savedClientId || '',
+                topic_prefix: savedTopicPrefix || 'esp32switch',
             });
         } catch (error) {
             console.error("Error loading saved MQTT config:", error);
@@ -65,28 +71,60 @@ export default function MQTTConfigPage() {
 
         try {
             await Promise.all([
+                AsyncStorage.setItem(getStorageKey('device_name'), config.device_name || alias || ''),
                 AsyncStorage.setItem(getStorageKey('broker_url'), config.broker_url),
                 AsyncStorage.setItem(getStorageKey('port'), config.port.toString()),
                 AsyncStorage.setItem(getStorageKey('username'), config.username || ''),
                 AsyncStorage.setItem(getStorageKey('password'), config.password || ''),
                 AsyncStorage.setItem(getStorageKey('client_id'), config.client_id || ''),
+                AsyncStorage.setItem(getStorageKey('topic_prefix'), config.topic_prefix || ''),
             ]);
         } catch (error) {
             console.error("Error saving MQTT config:", error);
         }
     };
 
-    const handleSaveConfig = async () => {
+    const handleContinue = async () => {
         if (!uniqueHardwareId || loading) return;
 
         // Verification
+        if (!mqttConfig.device_name.trim()) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Device Name is required',
+                position: 'top',
+            });
+            return;
+        }
+
         if (!mqttConfig.broker_url.trim()) {
-            Alert.alert("Error", "Broker URL is required");
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Broker URL is required',
+                position: 'top',
+            });
             return;
         }
 
         if (mqttConfig.port < 1 || mqttConfig.port > 65535) {
-            Alert.alert("Error", "Port must be between 1 and 65535");
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Port must be between 1 and 65535',
+                position: 'top',
+            });
+            return;
+        }
+
+        if (!mqttConfig.topic_prefix.trim()) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Topic Prefix is required',
+                position: 'top',
+            });
             return;
         }
 
@@ -99,15 +137,16 @@ export default function MQTTConfigPage() {
                 type: 'success',
                 text1: 'Success',
                 text2: 'MQTT configuration saved successfully',
-                position: 'bottom',
+                position: 'top',
             });
+            router.back();
         } catch (error) {
             console.error("Error saving MQTT config:", error);
             Toast.show({
                 type: 'error',
                 text1: 'Error',
                 text2: 'Failed to save MQTT configuration',
-                position: 'bottom',
+                position: 'top',
             });
         } finally {
             setLoading(false);
@@ -124,7 +163,7 @@ export default function MQTTConfigPage() {
     if (isLoadingConfig) {
         return (
             <>
-                <Stack.Screen options={{headerBackTitle: "Device", headerTitle: "MQTT Configuration"}}/>
+                <Stack.Screen options={{ headerBackTitle: "Device", headerTitle: "MQTT Configuration" }} />
                 <View style={[styles.container, styles.loadingContainer]}>
                     <ActivityIndicator size="large" color="#2196F3" />
                     <Text style={styles.loadingText}>Loading MQTT configuration...</Text>
@@ -135,7 +174,7 @@ export default function MQTTConfigPage() {
 
     return (
         <>
-            <Stack.Screen options={{headerBackTitle: "Device", headerTitle: "MQTT Configuration"}}/>
+            <Stack.Screen options={{ headerBackTitle: "Settings", headerTitle: "MQTT Configuration" }} />
             <ScrollView style={styles.container}>
                 <View style={styles.content}>
                     {isDeviceError && (
@@ -149,6 +188,19 @@ export default function MQTTConfigPage() {
 
                     <View style={styles.card}>
                         <Text style={styles.sectionTitle}>MQTT Configuration</Text>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Device Name *</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                value={mqttConfig.device_name}
+                                onChangeText={(value) => updateConfig('device_name', value)}
+                                placeholder="e.g., Living Room Switch"
+                                autoCapitalize="words"
+                                autoCorrect={false}
+                                editable={!isDeviceError}
+                            />
+                        </View>
 
                         <View style={styles.inputGroup}>
                             <Text style={styles.inputLabel}>Broker URL *</Text>
@@ -174,6 +226,19 @@ export default function MQTTConfigPage() {
                                 }}
                                 placeholder="1883"
                                 keyboardType="numeric"
+                                editable={!isDeviceError}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Topic Prefix *</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                value={mqttConfig.topic_prefix}
+                                onChangeText={(value) => updateConfig('topic_prefix', value)}
+                                placeholder="e.g., homeassistant/switch"
+                                autoCapitalize="none"
+                                autoCorrect={false}
                                 editable={!isDeviceError}
                             />
                         </View>
@@ -219,18 +284,18 @@ export default function MQTTConfigPage() {
                         </View>
 
                         <Pressable
-                            style={({pressed}) => [
-                                styles.saveButton,
-                                pressed && {opacity: 0.5},
-                                (loading || isDeviceError) && styles.saveButtonDisabled,
+                            style={({ pressed }) => [
+                                styles.continueButton,
+                                pressed && { opacity: 0.5 },
+                                (loading || isDeviceError) && styles.continueButtonDisabled,
                             ]}
-                            onPress={handleSaveConfig}
+                            onPress={handleContinue}
                             disabled={loading || isDeviceError}
                         >
                             {loading ? (
                                 <ActivityIndicator size="small" color="white" />
                             ) : (
-                                <Text style={styles.saveButtonText}>Save Configuration</Text>
+                                <Text style={styles.continueButtonText}>Continue</Text>
                             )}
                         </Pressable>
                     </View>
@@ -288,17 +353,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         backgroundColor: 'white',
     },
-    saveButton: {
+    continueButton: {
         backgroundColor: '#2196F3',
         padding: 12,
         borderRadius: 8,
         alignItems: 'center',
         marginTop: 20,
     },
-    saveButtonDisabled: {
+    continueButtonDisabled: {
         opacity: 0.5,
     },
-    saveButtonText: {
+    continueButtonText: {
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',

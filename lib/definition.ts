@@ -52,8 +52,10 @@ export interface SetSoundModeDTO {
 }
 
 export interface MQTTConfigDTO {
+    device_name: string;
     broker_url: string;
     port: number;
+    topic_prefix: string;
     username?: string;
     password?: string;
     client_id?: string;
