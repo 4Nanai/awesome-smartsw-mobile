@@ -128,6 +128,16 @@ export default function MQTTConfigPage() {
             return;
         }
 
+        if (mqttConfig.topic_prefix.length > 30) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Topic Prefix must not exceed 30 characters',
+                position: 'top',
+            });
+            return;
+        }
+
         setLoading(true);
 
         try {
