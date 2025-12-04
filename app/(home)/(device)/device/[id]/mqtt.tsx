@@ -1,10 +1,12 @@
 import { setMQTTConfigApi } from "@/api/api";
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
 import { MQTTConfigDTO } from "@/lib/definition";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router/build/hooks";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import Toast from 'react-native-toast-message';
 
 export default function MQTTConfigPage() {
@@ -12,6 +14,9 @@ export default function MQTTConfigPage() {
     const { id, state, alias }: { id?: string; state?: string; alias?: string } = useLocalSearchParams();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
     const deviceState = typeof state === 'string' ? state as "on" | "off" | "error" : "error";
+
+    const colorScheme = useColorScheme() ?? 'light';
+    const themeColors = Colors[colorScheme];
 
     const [mqttConfig, setMqttConfig] = useState<MQTTConfigDTO>({
         broker_url: '',
@@ -178,12 +183,149 @@ export default function MQTTConfigPage() {
         }));
     };
 
+    const styles = useMemo(() => StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: themeColors.background,
+        },
+        scrollView: {
+            flex: 1,
+        },
+        content: {
+            flexGrow: 1,
+            padding: 20,
+        },
+        card: {
+            backgroundColor: themeColors.cardBackground,
+            padding: 20,
+            marginBottom: 15,
+            borderRadius: 10,
+            shadowColor: themeColors.shadowColor,
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 3,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: themeColors.text,
+            marginBottom: 20,
+        },
+        inputGroup: {
+            marginBottom: 15,
+        },
+        inputLabel: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: themeColors.text,
+            marginBottom: 5,
+        },
+        textInput: {
+            borderWidth: 1,
+            borderColor: themeColors.inputBorder,
+            borderRadius: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            fontSize: 16,
+            backgroundColor: themeColors.inputBackground,
+            color: themeColors.text,
+        },
+        continueButton: {
+            backgroundColor: themeColors.buttonBackground,
+            padding: 12,
+            borderRadius: 8,
+            alignItems: 'center',
+            marginTop: 20,
+        },
+        continueButtonDisabled: {
+            opacity: 0.5,
+        },
+        continueButtonText: {
+            color: themeColors.buttonText,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        loadingText: {
+            marginTop: 12,
+            fontSize: 16,
+            color: themeColors.text,
+        },
+        warningCard: {
+            backgroundColor: themeColors.warningBackground,
+            padding: 16,
+            marginBottom: 15,
+            borderRadius: 10,
+            borderLeftWidth: 4,
+            borderLeftColor: themeColors.warningBorder,
+        },
+        warningTitle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: themeColors.warningText,
+            marginBottom: 8,
+        },
+        warningMessage: {
+            fontSize: 14,
+            color: themeColors.warningText,
+            lineHeight: 20,
+        },
+        switchRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        switch: {
+            width: 50,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: themeColors.switchInactive,
+            padding: 2,
+            justifyContent: 'center',
+        },
+        switchActive: {
+            backgroundColor: themeColors.switchActive,
+        },
+        switchThumb: {
+            width: 24,
+            height: 24,
+            borderRadius: 12,
+            backgroundColor: themeColors.switchThumb,
+            shadowColor: themeColors.shadowColor,
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.2,
+            shadowRadius: 2,
+            elevation: 2,
+        },
+        switchThumbActive: {
+            alignSelf: 'flex-end',
+        },
+        textInputDisabled: {
+            backgroundColor: themeColors.disabledBackground,
+            color: themeColors.disabledText,
+        },
+        inputLabelDisabled: {
+            color: themeColors.disabledText,
+        },
+    }), [themeColors]);
+
     if (isLoadingConfig) {
         return (
             <>
                 <Stack.Screen options={{ headerBackTitle: "Device", headerTitle: "MQTT Configuration" }} />
                 <View style={[styles.container, styles.loadingContainer]}>
-                    <ActivityIndicator size="large" color="#2196F3" />
+                    <ActivityIndicator size="large" color={themeColors.buttonBackground} />
                     <Text style={styles.loadingText}>Loading MQTT configuration...</Text>
                 </View>
             </>
@@ -193,8 +335,17 @@ export default function MQTTConfigPage() {
     return (
         <>
             <Stack.Screen options={{ headerBackTitle: "Settings", headerTitle: "MQTT Configuration" }} />
-            <ScrollView style={styles.container}>
-                <View style={styles.content}>
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+            >
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.content}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
                     {isDeviceError && (
                         <View style={styles.warningCard}>
                             <Text style={styles.warningTitle}>⚠️ Device Error</Text>
@@ -343,142 +494,9 @@ export default function MQTTConfigPage() {
                             )}
                         </Pressable>
                     </View>
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
             <Toast />
         </>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-    content: {
-        flex: 1,
-        padding: 20,
-    },
-    card: {
-        backgroundColor: 'white',
-        padding: 20,
-        marginBottom: 15,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 20,
-    },
-    inputGroup: {
-        marginBottom: 15,
-    },
-    inputLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 5,
-    },
-    textInput: {
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 16,
-        backgroundColor: 'white',
-    },
-    continueButton: {
-        backgroundColor: '#2196F3',
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    continueButtonDisabled: {
-        opacity: 0.5,
-    },
-    continueButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        marginTop: 12,
-        fontSize: 16,
-        color: '#666',
-    },
-    warningCard: {
-        backgroundColor: '#FFF3E0',
-        padding: 16,
-        marginBottom: 15,
-        borderRadius: 10,
-        borderLeftWidth: 4,
-        borderLeftColor: '#FF9800',
-    },
-    warningTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#E65100',
-        marginBottom: 8,
-    },
-    warningMessage: {
-        fontSize: 14,
-        color: '#E65100',
-        lineHeight: 20,
-    },
-    switchRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    switch: {
-        width: 50,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: '#e0e0e0',
-        padding: 2,
-        justifyContent: 'center',
-    },
-    switchActive: {
-        backgroundColor: '#2196F3',
-    },
-    switchThumb: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: 'white',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    switchThumbActive: {
-        alignSelf: 'flex-end',
-    },
-    textInputDisabled: {
-        backgroundColor: '#f5f5f5',
-        color: '#999',
-    },
-    inputLabelDisabled: {
-        color: '#999',
-    },
-});

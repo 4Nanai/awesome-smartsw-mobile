@@ -276,6 +276,8 @@ export default function DevicePage() {
             setCurrentState(message.payload.state);
             if (message.payload.state === "on") {
                 setToggleState(true);
+            } else if (message.payload.state === "off") {
+                setToggleState(false);
             }
         }
     };
