@@ -3,13 +3,261 @@ import { useApiSocket } from "@/hook/useApiSocket";
 import { UserMessageDTO } from "@/lib/definition";
 import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router/build/hooks";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, useColorScheme, View } from "react-native";
 import { ReadyState } from "react-use-websocket";
 
 export default function DevicePage() {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+
+    const lightColors = {
+        background: '#f5f5f5',
+        card: 'white',
+        text: '#333',
+        label: '#666',
+        value: '#333',
+        inputBg: '#f9f9f9',
+        inputBorder: '#ddd',
+        buttonBg: '#2196F3',
+        buttonText: 'white',
+        cancelBg: '#9E9E9E',
+        saveBg: '#4CAF50',
+        statusBarBg: '#e0e0e0',
+        statusText: '#666',
+        warning: '#F44336',
+        shadow: '#000',
+    };
+
+    const darkColors = {
+        background: '#121212',
+        card: '#1e1e1e',
+        text: '#fff',
+        label: '#ccc',
+        value: '#fff',
+        inputBg: '#2c2c2c',
+        inputBorder: '#555',
+        buttonBg: '#2196F3',
+        buttonText: 'white',
+        cancelBg: '#666',
+        saveBg: '#4CAF50',
+        statusBarBg: '#333',
+        statusText: '#ccc',
+        warning: '#F44336',
+        shadow: '#000',
+    };
+
+    const colors = isDark ? darkColors : lightColors;
+
+    const getStyles = (colors: typeof lightColors) => StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: colors.background,
+            paddingTop: 20,
+        },
+        header: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingBottom: 10,
+        },
+        backButton: {
+            paddingVertical: 6,
+        },
+        backButtonText: {
+            color: '#2196F3',
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        title: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: colors.text,
+        },
+        placeholder: {
+            width: 60,
+        },
+        statusBar: {
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            paddingVertical: 8,
+            backgroundColor: colors.statusBarBg,
+            marginHorizontal: 20,
+            borderRadius: 5,
+            marginBottom: 20,
+        },
+        statusTextSmall: {
+            fontSize: 12,
+            color: colors.statusText,
+        },
+        content: {
+            flex: 1,
+            paddingHorizontal: 20,
+        },
+        card: {
+            backgroundColor: colors.card,
+            padding: 20,
+            marginBottom: 15,
+            borderRadius: 10,
+            shadowColor: colors.shadow,
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 3,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: colors.text,
+            marginBottom: 15,
+        },
+        infoRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+        },
+        label: {
+            fontSize: 14,
+            color: colors.label,
+            fontWeight: '600',
+            flex: 1,
+        },
+        value: {
+            fontSize: 14,
+            color: colors.value,
+            flex: 2,
+            textAlign: 'right',
+        },
+        editContainer: {
+            flex: 2,
+        },
+        input: {
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+            borderRadius: 5,
+            padding: 8,
+            fontSize: 14,
+            backgroundColor: colors.inputBg,
+            color: colors.text,
+        },
+        buttonRow: {
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            marginTop: 10,
+            gap: 10,
+        },
+        editButton: {
+            backgroundColor: colors.buttonBg,
+            padding: 12,
+            borderRadius: 8,
+            alignItems: 'center',
+            marginTop: 10,
+        },
+        editButtonText: {
+            color: colors.buttonText,
+            fontSize: 14,
+            fontWeight: 'bold',
+        },
+        cancelButton: {
+            backgroundColor: colors.cancelBg,
+            paddingHorizontal: 20,
+            paddingVertical: 10,
+            borderRadius: 8,
+        },
+        cancelButtonText: {
+            color: colors.buttonText,
+            fontSize: 14,
+            fontWeight: 'bold',
+        },
+        saveButton: {
+            backgroundColor: colors.saveBg,
+            paddingHorizontal: 20,
+            paddingVertical: 10,
+            borderRadius: 8,
+        },
+        saveButtonText: {
+            color: colors.buttonText,
+            fontSize: 14,
+            fontWeight: 'bold',
+        },
+        statusDisplay: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        statusDotLarge: {
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            marginRight: 5,
+        },
+        statusTextLarge: {
+            fontSize: 20,
+            fontWeight: 'bold',
+        },
+        toggleButton: {
+            padding: 20,
+            borderRadius: 10,
+            alignItems: 'center',
+            shadowColor: colors.shadow,
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.2,
+            shadowRadius: 3,
+            elevation: 3,
+        },
+        warningText: {
+            marginTop: 10,
+            fontSize: 12,
+            color: colors.warning,
+            textAlign: 'center',
+        },
+        messageCard: {
+            backgroundColor: isDark ? '#1a237e' : '#e3f2fd',
+            padding: 15,
+            borderRadius: 8,
+            marginBottom: 15,
+        },
+        messageTitle: {
+            fontSize: 12,
+            fontWeight: 'bold',
+            color: isDark ? '#bbdefb' : '#1976d2',
+            marginBottom: 5,
+        },
+        messageText: {
+            fontSize: 11,
+            color: isDark ? '#bbdefb' : '#1976d2',
+        },
+        controlRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        statusRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        settingsButton: {
+            paddingVertical: 5,
+            paddingHorizontal: 8,
+        },
+        settingsButtonText: {
+            color: colors.text,
+            fontSize: 16,
+            fontWeight: '600',
+        }
+    });
+
+    const styles = useMemo(() => getStyles(colors), [colors]);
+
     const {id, state, alias} = useLocalSearchParams();
     const router = useRouter();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
@@ -215,215 +463,4 @@ export default function DevicePage() {
         </>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: 20,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingBottom: 10,
-    },
-    backButton: {
-        paddingVertical: 6,
-    },
-    backButtonText: {
-        color: '#2196F3',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    placeholder: {
-        width: 60,
-    },
-    statusBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingVertical: 8,
-        backgroundColor: '#e0e0e0',
-        marginHorizontal: 20,
-        borderRadius: 5,
-        marginBottom: 20,
-    },
-    statusTextSmall: {
-        fontSize: 12,
-        color: '#666',
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 20,
-    },
-    card: {
-        backgroundColor: 'white',
-        padding: 20,
-        marginBottom: 15,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 15,
-    },
-    infoRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    label: {
-        fontSize: 14,
-        color: '#666',
-        fontWeight: '600',
-        flex: 1,
-    },
-    value: {
-        fontSize: 14,
-        color: '#333',
-        flex: 2,
-        textAlign: 'right',
-    },
-    editContainer: {
-        flex: 2,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 5,
-        padding: 8,
-        fontSize: 14,
-        backgroundColor: '#f9f9f9',
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginTop: 10,
-        gap: 10,
-    },
-    editButton: {
-        backgroundColor: '#2196F3',
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    editButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    cancelButton: {
-        backgroundColor: '#9E9E9E',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
-    },
-    cancelButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    saveButton: {
-        backgroundColor: '#4CAF50',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
-    },
-    saveButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    statusDisplay: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    statusDotLarge: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        marginRight: 5,
-    },
-    statusTextLarge: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    toggleButton: {
-        padding: 20,
-        borderRadius: 10,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    toggleButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    warningText: {
-        marginTop: 10,
-        fontSize: 12,
-        color: '#F44336',
-        textAlign: 'center',
-    },
-    messageCard: {
-        backgroundColor: '#e3f2fd',
-        padding: 15,
-        borderRadius: 8,
-        marginBottom: 15,
-    },
-    messageTitle: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#1976d2',
-        marginBottom: 5,
-    },
-    messageText: {
-        fontSize: 11,
-        color: '#1976d2',
-    },
-    controlRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    statusRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    settingsButton: {
-        paddingVertical: 5,
-        paddingHorizontal: 8,
-    },
-    settingsButtonText: {
-        color: 'black',
-        fontSize: 16,
-        fontWeight: '600',
-    }
-});
 

@@ -3,27 +3,259 @@ import { useApiSocket } from "@/hook/useApiSocket";
 import { DeviceDTO, UserMessageDTO } from "@/lib/definition";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, FlatList, Pressable, StyleSheet, Text, View, useColorScheme } from "react-native";
 import { ReadyState } from 'react-use-websocket';
 
 export default function HomePage() {
     const router = useRouter();
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
+
+    const lightColors = {
+        background: '#f5f5f5',
+        card: 'white',
+        text: '#333',
+        label: '#666',
+        buttonBg: '#2196F3',
+        buttonText: 'white',
+        statusBarBg: '#e0e0e0',
+        statusText: '#666',
+        shadow: '#000',
+        refreshingText: '#2196F3',
+        arrow: '#666',
+        emptyTitle: '#333',
+        emptySubtitle: '#666',
+        primaryButtonBg: '#4CAF50',
+    };
+
+    const darkColors = {
+        background: '#121212',
+        card: '#1e1e1e',
+        text: '#fff',
+        label: '#ccc',
+        buttonBg: '#2196F3',
+        buttonText: 'white',
+        statusBarBg: '#333',
+        statusText: '#ccc',
+        shadow: '#000',
+        refreshingText: '#2196F3',
+        arrow: '#ccc',
+        emptyTitle: '#fff',
+        emptySubtitle: '#ccc',
+        primaryButtonBg: '#4CAF50',
+    };
+
+    const colors = isDark ? darkColors : lightColors;
+
+    const getStyles = (colors: typeof lightColors) => StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: colors.background,
+            paddingTop: 50,
+        },
+        header: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingBottom: 10,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: colors.text,
+        },
+        refreshButton: {
+            backgroundColor: colors.buttonBg,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 5,
+            marginLeft: 40,
+        },
+        refreshText: {
+            color: colors.buttonText,
+            fontSize: 12,
+            fontWeight: 'bold',
+        },
+        statusBar: {
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            paddingVertical: 8,
+            backgroundColor: colors.statusBarBg,
+            marginHorizontal: 20,
+            borderRadius: 5,
+            marginBottom: 10,
+        },
+        statusTextSmall: {
+            fontSize: 12,
+            color: colors.statusText,
+        },
+        content: {
+            flex: 1,
+            paddingHorizontal: 20,
+        },
+        loadingText: {
+            textAlign: 'center',
+            marginTop: 50,
+            fontSize: 16,
+            color: colors.label,
+        },
+        sectionHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 15,
+        },
+        sectionTitle: {
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: colors.text,
+        },
+        refreshingText: {
+            fontSize: 12,
+            color: colors.refreshingText,
+            fontStyle: 'italic',
+        },
+        devicesList: {
+            flex: 1,
+        },
+        deviceItem: {
+            backgroundColor: colors.card,
+            padding: 15,
+            marginBottom: 10,
+            borderRadius: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            shadowColor: colors.shadow,
+            shadowOffset: {
+                width: 0,
+                height: 1,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
+            elevation: 2,
+        },
+        deviceInfo: {
+            flex: 1,
+        },
+        deviceName: {
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.text,
+            marginBottom: 5,
+        },
+        statusContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        statusDot: {
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            marginRight: 6,
+        },
+        statusText: {
+            fontSize: 12,
+            fontWeight: '500',
+            textTransform: 'capitalize',
+        },
+        arrow: {
+            fontSize: 18,
+            color: colors.arrow,
+            marginLeft: 10,
+        },
+        addButton: {
+            backgroundColor: colors.buttonBg,
+            padding: 15,
+            borderRadius: 8,
+            alignItems: 'center',
+            marginTop: 10,
+            marginBottom: 10,
+        },
+        addButtonText: {
+            color: colors.buttonText,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+        emptyState: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 40,
+        },
+        emptyTitle: {
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: colors.emptyTitle,
+            marginBottom: 10,
+        },
+        emptySubtitle: {
+            fontSize: 14,
+            color: colors.emptySubtitle,
+            textAlign: 'center',
+            marginBottom: 30,
+        },
+        primaryButton: {
+            backgroundColor: colors.primaryButtonBg,
+            paddingHorizontal: 30,
+            paddingVertical: 15,
+            borderRadius: 8,
+        },
+        primaryButtonText: {
+            color: colors.buttonText,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+    });
+
+    const styles = useMemo(() => getStyles(colors), [colors]);
+
     const [devices, setDevices] = useState<DeviceDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
+    const loadDeviceStatuses = async (): Promise<Record<string, string>> => {
+        try {
+            const stored = await AsyncStorage.getItem('device-statuses');
+            return stored ? JSON.parse(stored) : {};
+        } catch (error) {
+            console.error('Failed to load device statuses:', error);
+            return {};
+        }
+    };
+
+    const saveDeviceStatuses = async (statuses: Record<string, string>) => {
+        try {
+            await AsyncStorage.setItem('device-statuses', JSON.stringify(statuses));
+        } catch (error) {
+            console.error('Failed to save device statuses:', error);
+        }
+    };
+
     const handleEndpointStateUpdate = (message: UserMessageDTO) => {
         if (message.payload && message.payload.uniqueHardwareId && message.payload.state) {
-            setDevices(prevDevices => prevDevices.map(device => {
-                if (device.unique_hardware_id === message.payload!.uniqueHardwareId) {
-                    return {
-                        ...device,
-                        status: message.payload!.state!
-                    };
-                }
-                return device;
-            }));
+            setDevices(prevDevices => {
+                const updatedDevices = prevDevices.map(device => {
+                    if (device.unique_hardware_id === message.payload!.uniqueHardwareId) {
+                        return {
+                            ...device,
+                            status: message.payload!.state!
+                        };
+                    }
+                    return device;
+                });
+                
+                // Save updated statuses to AsyncStorage
+                const statusMap: Record<string, string> = {};
+                updatedDevices.forEach(device => {
+                    statusMap[device.unique_hardware_id] = device.status;
+                });
+                saveDeviceStatuses(statusMap);
+                
+                return updatedDevices;
+            });
         }
     };
 
@@ -62,8 +294,18 @@ export default function HomePage() {
             }
             const devices = await getAllDevicesApi();
             console.log('Fetched devices:', devices);
-            if (devices.length !== 0) {
-                setDevices(devices);
+            
+            // Load saved statuses
+            const savedStatuses = await loadDeviceStatuses();
+            
+            // Merge saved statuses with fetched devices
+            const devicesWithStatus = devices.map(device => ({
+                ...device,
+                status: (savedStatuses[device.unique_hardware_id] as "on" | "off" | "error" | "unknown") || device.status
+            }));
+            
+            if (devicesWithStatus.length !== 0) {
+                setDevices(devicesWithStatus);
                 if (readyState === ReadyState.OPEN && isAuthenticated) {
                     const message: UserMessageDTO = {
                         type: "query_endpoint_state"
@@ -164,10 +406,6 @@ export default function HomePage() {
                 <Text style={styles.statusTextSmall}>Auth: {isAuthenticated ? 'Yes' : 'No'}</Text>
             </View>
 
-            {lastMessage && (
-                <Text style={styles.message}>Last Message: {lastMessage.data}</Text>
-            )}
-
             <View style={styles.content}>
                 {loading && devices.length === 0 ? (
                     <Text style={styles.loadingText}>Loading devices...</Text>
@@ -202,174 +440,3 @@ export default function HomePage() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: 50,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingBottom: 10,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    refreshButton: {
-        backgroundColor: '#2196F3',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 5,
-        marginLeft: 40,
-    },
-    refreshText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    statusBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingVertical: 8,
-        backgroundColor: '#e0e0e0',
-        marginHorizontal: 20,
-        borderRadius: 5,
-        marginBottom: 10,
-    },
-    statusTextSmall: {
-        fontSize: 12,
-        color: '#666',
-    },
-    message: {
-        marginHorizontal: 20,
-        marginBottom: 10,
-        padding: 10,
-        backgroundColor: '#e3f2fd',
-        borderRadius: 5,
-        fontSize: 12,
-        color: '#1976d2',
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 20,
-    },
-    loadingText: {
-        textAlign: 'center',
-        marginTop: 50,
-        fontSize: 16,
-        color: '#666',
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 15,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    refreshingText: {
-        fontSize: 12,
-        color: '#2196F3',
-        fontStyle: 'italic',
-    },
-    devicesList: {
-        flex: 1,
-    },
-    deviceItem: {
-        backgroundColor: 'white',
-        padding: 15,
-        marginBottom: 10,
-        borderRadius: 8,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    deviceInfo: {
-        flex: 1,
-    },
-    deviceName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 5,
-    },
-    statusContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    statusDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        marginRight: 6,
-    },
-    statusText: {
-        fontSize: 12,
-        fontWeight: '500',
-        textTransform: 'capitalize',
-    },
-    arrow: {
-        fontSize: 18,
-        color: '#666',
-        marginLeft: 10,
-    },
-    addButton: {
-        backgroundColor: '#2196F3',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-        marginBottom: 10,
-    },
-    addButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    emptyState: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 40,
-    },
-    emptyTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 10,
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 30,
-    },
-    primaryButton: {
-        backgroundColor: '#4CAF50',
-        paddingHorizontal: 30,
-        paddingVertical: 15,
-        borderRadius: 8,
-    },
-    primaryButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-});

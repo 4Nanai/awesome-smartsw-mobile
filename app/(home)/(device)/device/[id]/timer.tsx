@@ -380,7 +380,7 @@ export default function TimerConfigPage() {
                                                         event.a && styles.actionButtonTextSelected,
                                                     ]}
                                                 >
-                                                    Turn ON
+                                                    ON
                                                 </Text>
                                             </Pressable>
                                             <Pressable
@@ -401,7 +401,7 @@ export default function TimerConfigPage() {
                                                         !event.a && styles.actionButtonTextSelected,
                                                     ]}
                                                 >
-                                                    Turn OFF
+                                                    OFF
                                                 </Text>
                                             </Pressable>
                                         </View>
