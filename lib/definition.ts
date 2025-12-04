@@ -51,6 +51,22 @@ export interface SetSensorOffDelayDTO {
     delay: number,
 }
 
+export interface TimerEvent {
+    h: number;
+    m: number;
+    s: number;
+    a: boolean;
+}
+
+export interface TimerConfig {
+    [day: string]: TimerEvent[];
+}
+
+export interface SetTimerConfigDTO {
+    unique_hardware_id: string,
+    timer: TimerConfig,
+}
+
 export interface MQTTConfigDTO {
     device_name: string;
     broker_url: string;

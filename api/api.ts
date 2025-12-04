@@ -5,6 +5,7 @@ import {
     SetAutomationModeDTO,
     SetPresenceModeDTO,
     SetSensorOffDelayDTO,
+    SetTimerConfigDTO,
     UserLoginDTO,
     UserRegisterDTO
 } from "@/lib/definition";
@@ -206,6 +207,20 @@ const setSensorOffDelayApi = async (uniqueHardwareId: string, delay: number) => 
     }
 }
 
+const setTimerConfigApi = async (uniqueHardwareId: string, timer: SetTimerConfigDTO['timer']) => {
+    try {
+        const setTimerConfigDTO: SetTimerConfigDTO = {
+            unique_hardware_id: uniqueHardwareId,
+            timer,
+        }
+        const response = await apiClient.post<{ message: string }>('/device/manage/config/timer', setTimerConfigDTO);
+        return response.data.message;
+    } catch (error) {
+        console.log("Set Timer Config API Error:", error);
+        throw error;
+    }
+}
+
 const getDeviceManageStatsApi = async () => {
     try {
         const response = await apiClient.get('/device/manage/stats');
@@ -229,6 +244,6 @@ const setMQTTConfigApi = async (uniqueHardwareId: string, config: MQTTConfigDTO)
 export {
     deleteDeviceApi, getAllDevicesApi, getDeviceManageStatsApi, getProvisioningToken, loginApi,
     registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi, setMQTTConfigApi, setPresenceModeApi,
-    setSensorOffDelayApi, updateDeviceAliasApi, verifyEndpointAPConnection
+    setSensorOffDelayApi, setTimerConfigApi, updateDeviceAliasApi, verifyEndpointAPConnection
 };
 

@@ -4,7 +4,7 @@ import Slider from '@react-native-community/slider';
 import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router/build/hooks";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from "react-native";
 import { Path, Svg } from 'react-native-svg';
 import Toast from 'react-native-toast-message';
 
@@ -16,6 +16,8 @@ export default function DeviceSettingPage() {
     const {id, state, alias} = useLocalSearchParams();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
     const deviceState = typeof state === 'string' ? state as "on" | "off" | "error" | "unknown" : "unknown";
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     const [automationMode, setAutomationMode] = useState<AutomationMode>("off");
     const [presenceMode, setPresenceMode] = useState<PresenceMode>("pir_only");
@@ -216,6 +218,10 @@ export default function DeviceSettingPage() {
         router.push(`/(home)/(device)/device/${uniqueHardwareId}/mqtt?state=${deviceState}&alias=${alias}`);
     };
 
+    const handleConfigureTimer = () => {
+        router.push(`/(home)/(device)/device/${uniqueHardwareId}/timer?state=${deviceState}&alias=${alias}`);
+    };
+
     const renderModeButton = (
         key: string,
         label: string,
@@ -227,6 +233,7 @@ export default function DeviceSettingPage() {
             key={key}
             style={({pressed}) => [
                 styles.modeButton,
+                isDark && styles.modeButtonDark,
                 isSelected && styles.modeButtonSelected,
                 pressed && {opacity: 0.5},
                 disabled && styles.modeButtonDisabled,
@@ -236,6 +243,7 @@ export default function DeviceSettingPage() {
         >
             <Text style={[
                 styles.modeButtonText,
+                isDark && styles.modeButtonTextDark,
                 isSelected && styles.modeButtonTextSelected
             ]}>
                 {label}
@@ -247,9 +255,9 @@ export default function DeviceSettingPage() {
         return (
             <>
                 <Stack.Screen options={{headerBackTitle: "Device"}}/>
-                <View style={[styles.container, styles.loadingContainer]}>
+                <View style={[styles.container, isDark && styles.containerDark, styles.loadingContainer]}>
                     <ActivityIndicator size="large" color="#2196F3" />
-                    <Text style={styles.loadingText}>Loading settings...</Text>
+                    <Text style={[styles.loadingText, isDark && styles.loadingTextDark]}>Loading settings...</Text>
                 </View>
             </>
         );
@@ -258,19 +266,19 @@ export default function DeviceSettingPage() {
     return (
         <>
             <Stack.Screen options={{headerBackTitle: "Device"}}/>
-            <ScrollView style={styles.container}>
+            <ScrollView style={[styles.container, isDark && styles.containerDark]}>
                 <View style={styles.content}>
                     {isDeviceUnavailable && (
-                        <View style={styles.warningCard}>
-                            <Text style={styles.warningTitle}>⚠️ Device Error</Text>
-                            <Text style={styles.warningMessage}>
+                        <View style={[styles.warningCard, isDark && styles.warningCardDark]}>
+                            <Text style={[styles.warningTitle, isDark && styles.warningTitleDark]}>⚠️ Device Error</Text>
+                            <Text style={[styles.warningMessage, isDark && styles.warningMessageDark]}>
                                 The device is currently in an error state. Settings cannot be modified. Please check the device connection and refresh the status on the device details page.
                             </Text>
                         </View>
                     )}
-                    <View style={styles.card}>
+                    <View style={[styles.card, isDark && styles.cardDark]}>
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Automation Mode</Text>
+                            <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>Automation Mode</Text>
                             {loadingAutomation && <ActivityIndicator size="small" color="#2196F3" />}
                         </View>
                         <View style={styles.modeGrid}>
@@ -286,9 +294,9 @@ export default function DeviceSettingPage() {
                         </View>
                     </View>
 
-                    <View style={styles.card}>
+                    <View style={[styles.card, isDark && styles.cardDark]}>
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Presence Mode</Text>
+                            <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>Presence Mode</Text>
                             {loadingPresence && <ActivityIndicator size="small" color="#2196F3" />}
                         </View>
                         <View style={styles.modeGrid}>
@@ -304,15 +312,15 @@ export default function DeviceSettingPage() {
                         </View>
                     </View>
 
-                    <View style={styles.card}>
+                    <View style={[styles.card, isDark && styles.cardDark]}>
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Sensor Off Delay</Text>
+                            <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>Sensor Off Delay</Text>
                             {loadingSensorDelay && <ActivityIndicator size="small" color="#2196F3" />}
                         </View>
                         <View style={styles.sliderContainer}>
                             <View style={styles.sliderHeader}>
-                                <Text style={styles.sliderLabel}>Delay Time</Text>
-                                <Text style={styles.sliderValue}>{sensorOffDelay}s</Text>
+                                <Text style={[styles.sliderLabel, isDark && styles.sliderLabelDark]}>Delay Time</Text>
+                                <Text style={[styles.sliderValue, isDark && styles.sliderValueDark]}>{sensorOffDelay}s</Text>
                             </View>
                             <Slider
                                 style={styles.slider}
@@ -327,17 +335,33 @@ export default function DeviceSettingPage() {
                                 disabled={loadingSensorDelay || isDeviceUnavailable}
                             />
                             <View style={styles.sliderRange}>
-                                <Text style={styles.sliderRangeText}>15s</Text>
-                                <Text style={styles.sliderRangeText}>300s</Text>
+                                <Text style={[styles.sliderRangeText, isDark && styles.sliderRangeTextDark]}>15s</Text>
+                                <Text style={[styles.sliderRangeText, isDark && styles.sliderRangeTextDark]}>300s</Text>
                             </View>
-                            <Text style={styles.sliderDescription}>
+                            <Text style={[styles.sliderDescription, isDark && styles.sliderDescriptionDark]}>
                                 Time to wait before turning off after no presence detected
                             </Text>
                         </View>
                     </View>
 
-                    <View style={styles.card}>
-                        <Text style={styles.sectionTitle}>Device Management</Text>
+                    <View style={[styles.card, isDark && styles.cardDark]}>
+                        <Text style={[styles.sectionTitle, isDark && styles.sectionTitleDark]}>Device Management</Text>
+                        <Pressable 
+                            style={({pressed}) => [
+                                styles.configButton, 
+                                pressed && {opacity: 0.5},
+                                isDeviceUnavailable && styles.configButtonDisabled
+                            ]} 
+                            onPress={handleConfigureTimer}
+                            disabled={isDeviceUnavailable}
+                        >
+                            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                <Svg width={20} height={20} viewBox="0 0 24 24" style={{marginRight: 8}}>
+                                    <Path fill="white" d="M10 3q-.425 0-.712-.288T9 2t.288-.712T10 1h4q.425 0 .713.288T15 2t-.288.713T14 3zm2 11q.425 0 .713-.288T13 13V9q0-.425-.288-.712T12 8t-.712.288T11 9v4q0 .425.288.713T12 14m0 8q-1.85 0-3.488-.712T5.65 19.35t-1.937-2.863T3 13t.713-3.488T5.65 6.65t2.863-1.937T12 4q1.55 0 2.975.5t2.675 1.45l.7-.7q.275-.275.7-.275t.7.275t.275.7t-.275.7l-.7.7Q20 8.6 20.5 10.025T21 13q0 1.85-.713 3.488T18.35 19.35t-2.863 1.938T12 22"/>
+                                </Svg>
+                                <Text style={styles.configButtonText}>Configure Timer</Text>
+                            </View>
+                        </Pressable>
                         <Pressable 
                             style={({pressed}) => [
                                 styles.connectButton, 
@@ -373,6 +397,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
     },
+    containerDark: {
+        backgroundColor: '#121212',
+    },
     content: {
         flex: 1,
         padding: 20,
@@ -391,6 +418,11 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 3,
     },
+    cardDark: {
+        backgroundColor: '#1E1E1E',
+        shadowColor: '#fff',
+        shadowOpacity: 0.05,
+    },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -402,6 +434,9 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
         marginBottom: 15,
+    },
+    sectionTitleDark: {
+        color: '#E0E0E0',
     },
     modeGrid: {
         flexDirection: 'row',
@@ -418,6 +453,10 @@ const styles = StyleSheet.create({
         minWidth: 80,
         alignItems: 'center',
     },
+    modeButtonDark: {
+        backgroundColor: '#2A2A2A',
+        borderColor: '#404040',
+    },
     modeButtonSelected: {
         backgroundColor: '#2196F3',
         borderColor: '#2196F3',
@@ -429,6 +468,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
         fontWeight: '600',
+    },
+    modeButtonTextDark: {
+        color: '#B0B0B0',
     },
     modeButtonTextSelected: {
         color: 'white',
@@ -461,6 +503,22 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
+    configButton: {
+        backgroundColor: '#FF9800',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    configButtonDisabled: {
+        backgroundColor: '#9E9E9E',
+        opacity: 0.6,
+    },
+    configButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -471,6 +529,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
     },
+    loadingTextDark: {
+        color: '#B0B0B0',
+    },
     warningCard: {
         backgroundColor: '#FFF3E0',
         padding: 16,
@@ -479,16 +540,26 @@ const styles = StyleSheet.create({
         borderLeftWidth: 4,
         borderLeftColor: '#FF9800',
     },
+    warningCardDark: {
+        backgroundColor: '#3E2723',
+        borderLeftColor: '#FF9800',
+    },
     warningTitle: {
         fontSize: 16,
         fontWeight: 'bold',
         color: '#E65100',
         marginBottom: 8,
     },
+    warningTitleDark: {
+        color: '#FFB74D',
+    },
     warningMessage: {
         fontSize: 14,
         color: '#E65100',
         lineHeight: 20,
+    },
+    warningMessageDark: {
+        color: '#FFB74D',
     },
     sliderContainer: {
         paddingVertical: 10,
@@ -504,10 +575,16 @@ const styles = StyleSheet.create({
         color: '#666',
         fontWeight: '500',
     },
+    sliderLabelDark: {
+        color: '#B0B0B0',
+    },
     sliderValue: {
         fontSize: 18,
         color: '#2196F3',
         fontWeight: 'bold',
+    },
+    sliderValueDark: {
+        color: '#64B5F6',
     },
     slider: {
         width: '100%',
@@ -522,10 +599,16 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#999',
     },
+    sliderRangeTextDark: {
+        color: '#666',
+    },
     sliderDescription: {
         fontSize: 13,
         color: '#999',
         marginTop: 10,
         lineHeight: 18,
+    },
+    sliderDescriptionDark: {
+        color: '#666',
     },
 });
