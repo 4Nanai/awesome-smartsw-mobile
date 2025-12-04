@@ -176,23 +176,40 @@ export default function DeviceSettingPage() {
             console.error("Invalid uniqueHardwareId");
             return;
         }
-        console.log("Attempting to delete device with ID:", uniqueHardwareId);
-        try {
-            const res = await deleteDeviceApi(uniqueHardwareId);
-            console.log("Delete Device Response:", res);
-            await clearDeviceConfig();
-            Alert.alert("Success", "Device unbound successfully", [
+
+        Alert.alert(
+            "Unbind Device",
+            "Are you sure you want to unbind this device? This action cannot be undone.",
+            [
                 {
-                    text: "OK",
-                    onPress: () => {
-                        router.dismissTo("/(home)/(device)");
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                {
+                    text: "Confirm",
+                    style: "destructive",
+                    onPress: async () => {
+                        console.log("Attempting to delete device with ID:", uniqueHardwareId);
+                        try {
+                            const res = await deleteDeviceApi(uniqueHardwareId);
+                            console.log("Delete Device Response:", res);
+                            await clearDeviceConfig();
+                            Alert.alert("Success", "Device unbound successfully", [
+                                {
+                                    text: "OK",
+                                    onPress: () => {
+                                        router.dismissTo("/(home)/(device)");
+                                    }
+                                }
+                            ]);
+                        } catch (error) {
+                            console.error("Error deleting device:", error);
+                            Alert.alert("Error", "Failed to unbind device");
+                        }
                     }
                 }
-            ]);
-        } catch (error) {
-            console.error("Error deleting device:", error);
-            Alert.alert("Error", "Failed to unbind device");
-        }
+            ]
+        );
     };
 
     const handleConnectToHomeAssistant = () => {

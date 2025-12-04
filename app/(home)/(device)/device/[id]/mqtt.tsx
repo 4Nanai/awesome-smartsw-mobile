@@ -21,6 +21,8 @@ export default function MQTTConfigPage() {
         client_id: '',
         topic_prefix: '',
         device_name: '',
+        ha_discovery_enabled: false,
+        ha_discovery_prefix: 'homeassistant',
     });
 
     const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function MQTTConfigPage() {
         if (!uniqueHardwareId) return;
 
         try {
-            const [savedBrokerUrl, savedPort, savedUsername, savedPassword, savedClientId, savedTopicPrefix, savedDeviceName] = await Promise.all([
+            const [savedBrokerUrl, savedPort, savedUsername, savedPassword, savedClientId, savedTopicPrefix, savedDeviceName, savedHaDiscoveryEnabled, savedHaDiscoveryPrefix] = await Promise.all([
                 AsyncStorage.getItem(getStorageKey('broker_url')),
                 AsyncStorage.getItem(getStorageKey('port')),
                 AsyncStorage.getItem(getStorageKey('username')),
@@ -48,6 +50,8 @@ export default function MQTTConfigPage() {
                 AsyncStorage.getItem(getStorageKey('client_id')),
                 AsyncStorage.getItem(getStorageKey('topic_prefix')),
                 AsyncStorage.getItem(getStorageKey('device_name')),
+                AsyncStorage.getItem(getStorageKey('ha_discovery_enabled')),
+                AsyncStorage.getItem(getStorageKey('ha_discovery_prefix')),
             ]);
 
             setMqttConfig({
@@ -58,6 +62,8 @@ export default function MQTTConfigPage() {
                 password: savedPassword || '',
                 client_id: savedClientId || '',
                 topic_prefix: savedTopicPrefix || 'esp32switch',
+                ha_discovery_enabled: savedHaDiscoveryEnabled === 'true',
+                ha_discovery_prefix: savedHaDiscoveryPrefix || 'homeassistant',
             });
         } catch (error) {
             console.error("Error loading saved MQTT config:", error);
@@ -78,6 +84,8 @@ export default function MQTTConfigPage() {
                 AsyncStorage.setItem(getStorageKey('password'), config.password || ''),
                 AsyncStorage.setItem(getStorageKey('client_id'), config.client_id || ''),
                 AsyncStorage.setItem(getStorageKey('topic_prefix'), config.topic_prefix || ''),
+                AsyncStorage.setItem(getStorageKey('ha_discovery_enabled'), config.ha_discovery_enabled.toString()),
+                AsyncStorage.setItem(getStorageKey('ha_discovery_prefix'), config.ha_discovery_prefix || 'homeassistant'),
             ]);
         } catch (error) {
             console.error("Error saving MQTT config:", error);
@@ -163,7 +171,7 @@ export default function MQTTConfigPage() {
         }
     };
 
-    const updateConfig = (field: keyof MQTTConfigDTO, value: string | number) => {
+    const updateConfig = (field: keyof MQTTConfigDTO, value: string | number | boolean) => {
         setMqttConfig(prev => ({
             ...prev,
             [field]: value,
@@ -293,6 +301,32 @@ export default function MQTTConfigPage() {
                             />
                         </View>
 
+                        <View style={styles.inputGroup}>
+                            <View style={styles.switchRow}>
+                                <Text style={styles.inputLabel}>Home Assistant Discovery</Text>
+                                <Pressable
+                                    style={[styles.switch, mqttConfig.ha_discovery_enabled && styles.switchActive]}
+                                    onPress={() => updateConfig('ha_discovery_enabled', !mqttConfig.ha_discovery_enabled)}
+                                    disabled={isDeviceError}
+                                >
+                                    <View style={[styles.switchThumb, mqttConfig.ha_discovery_enabled && styles.switchThumbActive]} />
+                                </Pressable>
+                            </View>
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.inputLabel, !mqttConfig.ha_discovery_enabled && styles.inputLabelDisabled]}>HA Discovery Prefix</Text>
+                            <TextInput
+                                style={[styles.textInput, !mqttConfig.ha_discovery_enabled && styles.textInputDisabled]}
+                                value={mqttConfig.ha_discovery_prefix}
+                                onChangeText={(value) => updateConfig('ha_discovery_prefix', value)}
+                                placeholder="homeassistant"
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                editable={!isDeviceError && mqttConfig.ha_discovery_enabled}
+                            />
+                        </View>
+
                         <Pressable
                             style={({ pressed }) => [
                                 styles.continueButton,
@@ -406,5 +440,45 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#E65100',
         lineHeight: 20,
+    },
+    switchRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    switch: {
+        width: 50,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#e0e0e0',
+        padding: 2,
+        justifyContent: 'center',
+    },
+    switchActive: {
+        backgroundColor: '#2196F3',
+    },
+    switchThumb: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    switchThumbActive: {
+        alignSelf: 'flex-end',
+    },
+    textInputDisabled: {
+        backgroundColor: '#f5f5f5',
+        color: '#999',
+    },
+    inputLabelDisabled: {
+        color: '#999',
     },
 });

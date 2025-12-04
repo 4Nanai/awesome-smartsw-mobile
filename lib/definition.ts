@@ -59,4 +59,6 @@ export interface MQTTConfigDTO {
     username?: string;
     password?: string;
     client_id?: string;
+    ha_discovery_enabled: boolean;
+    ha_discovery_prefix: string;
 }
