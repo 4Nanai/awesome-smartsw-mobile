@@ -19,6 +19,7 @@ export default function MQTTConfigPage() {
     const themeColors = Colors[colorScheme];
 
     const [mqttConfig, setMqttConfig] = useState<MQTTConfigDTO>({
+        enable: true,
         broker_url: '',
         port: 1883,
         username: '',
@@ -47,7 +48,7 @@ export default function MQTTConfigPage() {
         if (!uniqueHardwareId) return;
 
         try {
-            const [savedBrokerUrl, savedPort, savedUsername, savedPassword, savedClientId, savedTopicPrefix, savedDeviceName, savedHaDiscoveryEnabled, savedHaDiscoveryPrefix] = await Promise.all([
+            const [savedBrokerUrl, savedPort, savedUsername, savedPassword, savedClientId, savedTopicPrefix, savedDeviceName, savedHaDiscoveryEnabled, savedHaDiscoveryPrefix, savedMqttEnabled] = await Promise.all([
                 AsyncStorage.getItem(getStorageKey('broker_url')),
                 AsyncStorage.getItem(getStorageKey('port')),
                 AsyncStorage.getItem(getStorageKey('username')),
@@ -57,9 +58,11 @@ export default function MQTTConfigPage() {
                 AsyncStorage.getItem(getStorageKey('device_name')),
                 AsyncStorage.getItem(getStorageKey('ha_discovery_enabled')),
                 AsyncStorage.getItem(getStorageKey('ha_discovery_prefix')),
+                AsyncStorage.getItem(getStorageKey('mqtt_enabled')),
             ]);
 
             setMqttConfig({
+                enable: savedMqttEnabled === 'true' || savedMqttEnabled === null,
                 device_name: savedDeviceName || alias || '',
                 broker_url: savedBrokerUrl || '',
                 port: savedPort ? parseInt(savedPort) : 1883,
@@ -83,72 +86,75 @@ export default function MQTTConfigPage() {
         try {
             await Promise.all([
                 AsyncStorage.setItem(getStorageKey('device_name'), config.device_name || alias || ''),
-                AsyncStorage.setItem(getStorageKey('broker_url'), config.broker_url),
-                AsyncStorage.setItem(getStorageKey('port'), config.port.toString()),
+                AsyncStorage.setItem(getStorageKey('broker_url'), config.broker_url || ''),
+                AsyncStorage.setItem(getStorageKey('port'), (config.port || 1883).toString()),
                 AsyncStorage.setItem(getStorageKey('username'), config.username || ''),
                 AsyncStorage.setItem(getStorageKey('password'), config.password || ''),
                 AsyncStorage.setItem(getStorageKey('client_id'), config.client_id || ''),
                 AsyncStorage.setItem(getStorageKey('topic_prefix'), config.topic_prefix || ''),
-                AsyncStorage.setItem(getStorageKey('ha_discovery_enabled'), config.ha_discovery_enabled.toString()),
+                AsyncStorage.setItem(getStorageKey('ha_discovery_enabled'), (config.ha_discovery_enabled || false).toString()),
                 AsyncStorage.setItem(getStorageKey('ha_discovery_prefix'), config.ha_discovery_prefix || 'homeassistant'),
+                AsyncStorage.setItem(getStorageKey('mqtt_enabled'), config.enable.toString()),
             ]);
         } catch (error) {
             console.error("Error saving MQTT config:", error);
         }
     };
 
-    const handleContinue = async () => {
+    const handleSave = async () => {
         if (!uniqueHardwareId || loading) return;
 
-        // Verification
-        if (!mqttConfig.device_name.trim()) {
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Device Name is required',
-                position: 'top',
-            });
-            return;
-        }
+        // Verification only if MQTT is enabled
+        if (mqttConfig.enable) {
+            if (!mqttConfig.device_name?.trim()) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Device Name is required',
+                    position: 'top',
+                });
+                return;
+            }
 
-        if (!mqttConfig.broker_url.trim()) {
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Broker URL is required',
-                position: 'top',
-            });
-            return;
-        }
+            if (!mqttConfig.broker_url?.trim()) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Broker URL is required',
+                    position: 'top',
+                });
+                return;
+            }
 
-        if (mqttConfig.port < 1 || mqttConfig.port > 65535) {
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Port must be between 1 and 65535',
-                position: 'top',
-            });
-            return;
-        }
+            if (!mqttConfig.port || mqttConfig.port < 1 || mqttConfig.port > 65535) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Port must be between 1 and 65535',
+                    position: 'top',
+                });
+                return;
+            }
 
-        if (!mqttConfig.topic_prefix.trim()) {
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Topic Prefix is required',
-                position: 'top',
-            });
-            return;
-        }
+            if (!mqttConfig.topic_prefix?.trim()) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Topic Prefix is required',
+                    position: 'top',
+                });
+                return;
+            }
 
-        if (mqttConfig.topic_prefix.length > 30) {
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Topic Prefix must not exceed 30 characters',
-                position: 'top',
-            });
-            return;
+            if (mqttConfig.topic_prefix.length > 30) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Topic Prefix must not exceed 30 characters',
+                    position: 'top',
+                });
+                return;
+            }
         }
 
         setLoading(true);
@@ -234,17 +240,17 @@ export default function MQTTConfigPage() {
             backgroundColor: themeColors.inputBackground,
             color: themeColors.text,
         },
-        continueButton: {
+        saveButton: {
             backgroundColor: themeColors.buttonBackground,
             padding: 12,
             borderRadius: 8,
             alignItems: 'center',
             marginTop: 20,
         },
-        continueButtonDisabled: {
+        saveButtonDisabled: {
             opacity: 0.5,
         },
-        continueButtonText: {
+        saveButtonText: {
             color: themeColors.buttonText,
             fontSize: 16,
             fontWeight: 'bold',
@@ -359,138 +365,151 @@ export default function MQTTConfigPage() {
                         <Text style={styles.sectionTitle}>MQTT Configuration</Text>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Device Name *</Text>
+                            <View style={styles.switchRow}>
+                                <Text style={styles.inputLabel}>Enable MQTT Configuration</Text>
+                                <Pressable
+                                    style={[styles.switch, mqttConfig.enable && styles.switchActive]}
+                                    onPress={() => updateConfig('enable', !mqttConfig.enable)}
+                                    disabled={isDeviceError}
+                                >
+                                    <View style={[styles.switchThumb, mqttConfig.enable && styles.switchThumbActive]} />
+                                </Pressable>
+                            </View>
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={[styles.inputLabel, !mqttConfig.enable && styles.inputLabelDisabled]}>Device Name *</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, !mqttConfig.enable && styles.textInputDisabled]}
                                 value={mqttConfig.device_name}
                                 onChangeText={(value) => updateConfig('device_name', value)}
                                 placeholder="e.g., Living Room Switch"
                                 autoCapitalize="words"
                                 autoCorrect={false}
-                                editable={!isDeviceError}
+                                editable={!isDeviceError && mqttConfig.enable}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Broker URL *</Text>
+                            <Text style={[styles.inputLabel, !mqttConfig.enable && styles.inputLabelDisabled]}>Broker URL *</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, !mqttConfig.enable && styles.textInputDisabled]}
                                 value={mqttConfig.broker_url}
                                 onChangeText={(value) => updateConfig('broker_url', value)}
                                 placeholder="e.g., mqtt.example.com"
                                 autoCapitalize="none"
                                 autoCorrect={false}
-                                editable={!isDeviceError}
+                                editable={!isDeviceError && mqttConfig.enable}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Port *</Text>
+                            <Text style={[styles.inputLabel, !mqttConfig.enable && styles.inputLabelDisabled]}>Port *</Text>
                             <TextInput
-                                style={styles.textInput}
-                                value={mqttConfig.port.toString()}
+                                style={[styles.textInput, !mqttConfig.enable && styles.textInputDisabled]}
+                                value={mqttConfig.port?.toString() || '1883'}
                                 onChangeText={(value) => {
                                     const port = parseInt(value) || 1883;
                                     updateConfig('port', port);
                                 }}
                                 placeholder="1883"
                                 keyboardType="numeric"
-                                editable={!isDeviceError}
+                                editable={!isDeviceError && mqttConfig.enable}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Topic Prefix *</Text>
+                            <Text style={[styles.inputLabel, !mqttConfig.enable && styles.inputLabelDisabled]}>Topic Prefix *</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, !mqttConfig.enable && styles.textInputDisabled]}
                                 value={mqttConfig.topic_prefix}
                                 onChangeText={(value) => updateConfig('topic_prefix', value)}
                                 placeholder="e.g., homeassistant/switch"
                                 autoCapitalize="none"
                                 autoCorrect={false}
-                                editable={!isDeviceError}
+                                editable={!isDeviceError && mqttConfig.enable}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Username</Text>
+                            <Text style={[styles.inputLabel, !mqttConfig.enable && styles.inputLabelDisabled]}>Username</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, !mqttConfig.enable && styles.textInputDisabled]}
                                 value={mqttConfig.username}
                                 onChangeText={(value) => updateConfig('username', value)}
                                 placeholder="Optional"
                                 autoCapitalize="none"
                                 autoCorrect={false}
-                                editable={!isDeviceError}
+                                editable={!isDeviceError && mqttConfig.enable}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Password</Text>
+                            <Text style={[styles.inputLabel, !mqttConfig.enable && styles.inputLabelDisabled]}>Password</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, !mqttConfig.enable && styles.textInputDisabled]}
                                 value={mqttConfig.password}
                                 onChangeText={(value) => updateConfig('password', value)}
                                 placeholder="Optional"
                                 secureTextEntry
                                 autoCapitalize="none"
                                 autoCorrect={false}
-                                editable={!isDeviceError}
+                                editable={!isDeviceError && mqttConfig.enable}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Client ID</Text>
+                            <Text style={[styles.inputLabel, !mqttConfig.enable && styles.inputLabelDisabled]}>Client ID</Text>
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, !mqttConfig.enable && styles.textInputDisabled]}
                                 value={mqttConfig.client_id}
                                 onChangeText={(value) => updateConfig('client_id', value)}
                                 placeholder="Optional"
                                 autoCapitalize="none"
                                 autoCorrect={false}
-                                editable={!isDeviceError}
+                                editable={!isDeviceError && mqttConfig.enable}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
                             <View style={styles.switchRow}>
-                                <Text style={styles.inputLabel}>Home Assistant Discovery</Text>
+                                <Text style={[styles.inputLabel, !mqttConfig.enable && styles.inputLabelDisabled]}>Home Assistant Discovery</Text>
                                 <Pressable
-                                    style={[styles.switch, mqttConfig.ha_discovery_enabled && styles.switchActive]}
+                                    style={[styles.switch, mqttConfig.ha_discovery_enabled && mqttConfig.enable && styles.switchActive]}
                                     onPress={() => updateConfig('ha_discovery_enabled', !mqttConfig.ha_discovery_enabled)}
-                                    disabled={isDeviceError}
+                                    disabled={isDeviceError || !mqttConfig.enable}
                                 >
-                                    <View style={[styles.switchThumb, mqttConfig.ha_discovery_enabled && styles.switchThumbActive]} />
+                                    <View style={[styles.switchThumb, mqttConfig.ha_discovery_enabled && mqttConfig.enable && styles.switchThumbActive]} />
                                 </Pressable>
                             </View>
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.inputLabel, !mqttConfig.ha_discovery_enabled && styles.inputLabelDisabled]}>HA Discovery Prefix</Text>
+                            <Text style={[styles.inputLabel, (!mqttConfig.ha_discovery_enabled || !mqttConfig.enable) && styles.inputLabelDisabled]}>HA Discovery Prefix</Text>
                             <TextInput
-                                style={[styles.textInput, !mqttConfig.ha_discovery_enabled && styles.textInputDisabled]}
+                                style={[styles.textInput, (!mqttConfig.ha_discovery_enabled || !mqttConfig.enable) && styles.textInputDisabled]}
                                 value={mqttConfig.ha_discovery_prefix}
                                 onChangeText={(value) => updateConfig('ha_discovery_prefix', value)}
                                 placeholder="homeassistant"
                                 autoCapitalize="none"
                                 autoCorrect={false}
-                                editable={!isDeviceError && mqttConfig.ha_discovery_enabled}
+                                editable={!isDeviceError && mqttConfig.enable && mqttConfig.ha_discovery_enabled}
                             />
                         </View>
 
                         <Pressable
                             style={({ pressed }) => [
-                                styles.continueButton,
+                                styles.saveButton,
                                 pressed && { opacity: 0.5 },
-                                (loading || isDeviceError) && styles.continueButtonDisabled,
+                                (loading || isDeviceError) && styles.saveButtonDisabled,
                             ]}
-                            onPress={handleContinue}
+                            onPress={handleSave}
                             disabled={loading || isDeviceError}
                         >
                             {loading ? (
                                 <ActivityIndicator size="small" color="white" />
                             ) : (
-                                <Text style={styles.continueButtonText}>Continue</Text>
+                                <Text style={styles.saveButtonText}>Save</Text>
                             )}
                         </Pressable>
                     </View>

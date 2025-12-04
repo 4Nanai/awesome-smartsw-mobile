@@ -68,13 +68,14 @@ export interface SetTimerConfigDTO {
 }
 
 export interface MQTTConfigDTO {
-    device_name: string;
-    broker_url: string;
-    port: number;
-    topic_prefix: string;
+    enable: boolean;
+    device_name?: string;
+    broker_url?: string;
+    port?: number;
+    topic_prefix?: string;
     username?: string;
     password?: string;
     client_id?: string;
-    ha_discovery_enabled: boolean;
-    ha_discovery_prefix: string;
+    ha_discovery_enabled?: boolean;
+    ha_discovery_prefix?: string;
 }
