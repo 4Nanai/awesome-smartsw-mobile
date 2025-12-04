@@ -6,7 +6,9 @@ import {
     SetPresenceModeDTO,
     SetSensorOffDelayDTO,
     SetTimerConfigDTO,
+    UpdateUserTimezoneDTO,
     UserLoginDTO,
+    UserProfileDTO,
     UserRegisterDTO
 } from "@/lib/definition";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -92,11 +94,12 @@ const loginApi = async (username: string, password: string) => {
     }
 }
 
-const registerApi = async (username: string, email: string, password: string) => {
+const registerApi = async (username: string, email: string, password: string, timezone: string) => {
     const userRegisterDTO: UserRegisterDTO = {
         username,
         email,
         password,
+        timezone,
     }
     try {
         const response = await apiClient.post<{ message: string }>('/user/register', userRegisterDTO);
@@ -259,9 +262,30 @@ const setMQTTConfigApi = async (uniqueHardwareId: string, config: MQTTConfigDTO)
     }
 }
 
+const getUserProfileApi = async () => {
+    try {
+        const response = await apiClient.get('/user/profile');
+        return response.data;
+    } catch (error) {
+        console.log("Get User Profile API Error:", error);
+        throw error;
+    }
+}
+
+const updateUserTimezoneApi = async (timezone: string) => {
+    try {
+        const response = await apiClient.patch<{ message: string }>('/user/profile', { timezone });
+        return response.data.message;
+    } catch (error) {
+        console.log("Update User Timezone API Error:", error);
+        throw error;
+    }
+}
+
 export {
-    deleteDeviceApi, getAllDevicesApi, getDeviceManageStatsApi, getProvisioningToken, loginApi,
-    registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi, setMQTTConfigApi, setPresenceModeApi,
-    setSensorOffDelayApi, setTimerConfigApi, updateDeviceAliasApi, verifyEndpointAPConnection
+    deleteDeviceApi, getAllDevicesApi, getDeviceManageStatsApi, getProvisioningToken, getUserProfileApi,
+    loginApi, registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi, setMQTTConfigApi,
+    setPresenceModeApi, setSensorOffDelayApi, setTimerConfigApi, updateDeviceAliasApi,
+    updateUserTimezoneApi, verifyEndpointAPConnection
 };
 

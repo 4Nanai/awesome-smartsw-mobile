@@ -1,10 +1,12 @@
-import { getDeviceManageStatsApi } from "@/api/api";
+import { getDeviceManageStatsApi, getUserProfileApi, updateUserTimezoneApi } from "@/api/api";
+import { TIMEZONES } from "@/constants/timezones";
 import { Feather } from '@expo/vector-icons';
+import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from "react-native";
 import Toast from "react-native-toast-message";
 
 interface DeviceStats {
@@ -247,15 +249,28 @@ export default function SettingsPage() {
             fontSize: 16,
             fontWeight: 'bold',
         },
+        pickerContainer: {
+            borderWidth: 1.5,
+            borderColor: colors.inputBorder,
+            borderRadius: 10,
+            backgroundColor: colors.inputBg,
+            overflow: 'hidden',
+        },
+        picker: {
+            color: colors.text,
+            backgroundColor: 'transparent',
+        },
     });
 
     const styles = useMemo(() => getStyles(colors), [colors]);
 
     const [username, setUsername] = useState("");
+    const [timezone, setTimezone] = useState("UTC");
     const [isEditing, setIsEditing] = useState(false);
-    const [tempUsername, setTempUsername] = useState("");
+    const [tempTimezone, setTempTimezone] = useState("UTC");
     const [deviceStats, setDeviceStats] = useState<DeviceStats | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
     const loadDeviceStatsFromStorage = async (): Promise<DeviceStats | null> => {
         try {
@@ -277,6 +292,7 @@ export default function SettingsPage() {
 
     useEffect(() => {
         loadUsername();
+        loadUserProfile();
         loadDeviceStatsFromStorage().then(savedStats => {
             if (savedStats) {
                 setDeviceStats(savedStats);
@@ -299,13 +315,30 @@ export default function SettingsPage() {
             const storedUsername = await AsyncStorage.getItem("user-username");
             if (storedUsername) {
                 setUsername(storedUsername);
-                setTempUsername(storedUsername);
             } else {
                 setUsername("Not set");
-                setTempUsername("");
             }
         } catch (error) {
             console.error("Failed to load username:", error);
+        }
+    };
+
+    const loadUserProfile = async () => {
+        setIsLoadingProfile(true);
+        try {
+            const profile = await getUserProfileApi();
+            setTimezone(profile.timezone || 'UTC');
+            setTempTimezone(profile.timezone || 'UTC');
+            setIsLoadingProfile(false);
+        } catch (error) {
+            console.error("Failed to load user profile:", error);
+            setIsLoadingProfile(false);
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Failed to load user profile',
+                position: 'bottom',
+            });
         }
     };
 
@@ -327,39 +360,39 @@ export default function SettingsPage() {
         }
     };
 
-    const handleSaveUsername = async () => {
-        if (!tempUsername.trim()) {
+    const handleSaveTimezone = async () => {
+        if (!tempTimezone) {
             Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: 'Username cannot be empty',
+                text2: 'Please select a timezone',
             });
             return;
         }
 
         try {
-            await AsyncStorage.setItem("user-username", tempUsername.trim());
-            setUsername(tempUsername.trim());
+            await updateUserTimezoneApi(tempTimezone);
+            setTimezone(tempTimezone);
             setIsEditing(false);
             Toast.show({
                 type: 'success',
                 text1: 'Success',
-                text2: 'Username has been updated',
+                text2: 'Timezone has been updated',
                 position: 'bottom',
             });
         } catch (error) {
-            console.error("Failed to save username:", error);
+            console.error("Failed to update timezone:", error);
             Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: 'Failed to save username',
+                text2: 'Failed to update timezone',
                 position: 'bottom',
             });
         }
     };
 
     const handleCancelEdit = () => {
-        setTempUsername(username === "Not set" ? "" : username);
+        setTempTimezone(timezone);
         setIsEditing(false);
     };
 
@@ -428,7 +461,7 @@ export default function SettingsPage() {
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
                         <Text style={styles.cardTitle}>User Information</Text>
-                        {!isEditing && (
+                        {!isEditing && !isLoadingProfile && (
                             <Pressable
                                 style={({ pressed }) => [
                                     styles.editIconButton,
@@ -441,18 +474,31 @@ export default function SettingsPage() {
                         )}
                     </View>
                     
-                    {isEditing ? (
+                    {isLoadingProfile ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#2196F3" />
+                        </View>
+                    ) : isEditing ? (
                         <View style={styles.editContainer}>
                             <View style={styles.inputContainer}>
-                                <Text style={styles.inputLabel}>Username</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={tempUsername}
-                                    onChangeText={setTempUsername}
-                                    placeholder="Enter username"
-                                    autoFocus
-                                    placeholderTextColor="#999"
-                                />
+                                <Text style={styles.inputLabel}>Timezone</Text>
+                                <View style={styles.pickerContainer}>
+                                    <Picker
+                                        selectedValue={tempTimezone}
+                                        onValueChange={(itemValue) => setTempTimezone(itemValue)}
+                                        style={styles.picker}
+                                        dropdownIconColor={colors.text}
+                                    >
+                                        {TIMEZONES.map((tz) => (
+                                            <Picker.Item 
+                                                key={tz.value} 
+                                                label={tz.label} 
+                                                value={tz.value}
+                                                color={Platform.OS === 'ios' ? colors.text : undefined}
+                                            />
+                                        ))}
+                                    </Picker>
+                                </View>
                             </View>
                             <View style={styles.buttonRow}>
                                 <Pressable
@@ -471,7 +517,7 @@ export default function SettingsPage() {
                                         styles.saveButton,
                                         pressed && { opacity: 0.5 }
                                     ]}
-                                    onPress={handleSaveUsername}
+                                    onPress={handleSaveTimezone}
                                 >
                                     <Text style={styles.saveButtonText}>Save</Text>
                                 </Pressable>
@@ -489,6 +535,10 @@ export default function SettingsPage() {
                             <View style={styles.userDetails}>
                                 <Text style={styles.usernameLabel}>Username</Text>
                                 <Text style={styles.usernameValue}>{username}</Text>
+                                <Text style={[styles.usernameLabel, { marginTop: 16 }]}>Timezone</Text>
+                                <Text style={styles.usernameValue}>
+                                    {TIMEZONES.find(tz => tz.value === timezone)?.label || timezone}
+                                </Text>
                             </View>
                         </View>
                     )}

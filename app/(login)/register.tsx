@@ -1,6 +1,8 @@
 import { registerApi } from "@/api/api";
+import { detectUserTimezone, TIMEZONES } from "@/constants/timezones";
+import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -136,13 +138,30 @@ export default function RegisterPage() {
             color: colors.dividerText,
             fontSize: 14,
         },
+        pickerContainer: {
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+            borderRadius: 12,
+            backgroundColor: colors.inputBg,
+            overflow: 'hidden',
+        },
+        picker: {
+            color: colors.text,
+            backgroundColor: 'transparent',
+        },
     }), [colors]);
 
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [timezone, setTimezone] = useState('UTC');
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const detectedTimezone = detectUserTimezone();
+        setTimezone(detectedTimezone);
+    }, []);
 
     const validateForm = () => {
         if (!username.trim()) {
@@ -179,8 +198,8 @@ export default function RegisterPage() {
 
         setIsLoading(true);
         try {
-            console.log('Register:', {username, email, password});
-            await registerApi(username, email, password);
+            console.log('Register:', {username, email, password, timezone});
+            await registerApi(username, email, password, timezone);
             Alert.alert(
                 'Registration Successful',
                 'Your account has been created successfully. Please sign in.',
@@ -268,6 +287,27 @@ export default function RegisterPage() {
                             autoCapitalize="none"
                             autoCorrect={false}
                         />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Timezone</Text>
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={timezone}
+                                onValueChange={(itemValue) => setTimezone(itemValue)}
+                                style={styles.picker}
+                                dropdownIconColor={colors.text}
+                            >
+                                {TIMEZONES.map((tz) => (
+                                    <Picker.Item 
+                                        key={tz.value} 
+                                        label={tz.label} 
+                                        value={tz.value}
+                                        color={Platform.OS === 'ios' ? colors.text : undefined}
+                                    />
+                                ))}
+                            </Picker>
+                        </View>
                     </View>
 
                     {/* Buttons */}

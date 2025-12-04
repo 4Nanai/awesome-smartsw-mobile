@@ -7,6 +7,19 @@ export interface UserRegisterDTO {
     username: string,
     email: string,
     password: string,
+    timezone: string,
+}
+
+export interface UserProfileDTO {
+    id: number,
+    username: string,
+    email: string,
+    timezone: string,
+    created_at: string,
+}
+
+export interface UpdateUserTimezoneDTO {
+    timezone: string,
 }
 
 export interface UserMessageDTO {
