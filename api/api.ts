@@ -10,7 +10,7 @@ import {
     UserRegisterDTO
 } from "@/lib/definition";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { router } from "expo-router";
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'https://api.example.com';
@@ -42,15 +42,33 @@ apiClient.interceptors.response.use(
     (response) => {
         return response;
     },
-    async (error) => {
+    async (error: AxiosError<{ error?: string; message?: string }>) => {
         const originalRequest = error.config;
+        
+        // Detailed logging for debugging
+        if (error.response) {
+            const errorMessage = error.response.data?.error || error.response.data?.message || 'Unknown error';
+            console.log(`API Error [${error.response.status}]:`, errorMessage);
+            console.log('Request URL:', originalRequest?.url);
+            console.log('Full error data:', error.response.data);
+        } else if (error.request) {
+            console.log('API Error: No response received', error.message);
+        } else {
+            console.log('API Error:', error.message);
+        }
+        
         if (error.response && error.response.status === 401) {
-            if (originalRequest.url.includes('login')) {
+            if (originalRequest?.url?.includes('login')) {
                 return Promise.reject(error.response.data || error);
             }
             console.log('Unauthorized, redirecting to login...');
             await AsyncStorage.removeItem("user-token");
             router.replace("/(login)")
+        }
+        
+        // Return the error response data if available
+        if (error.response?.data) {
+            return Promise.reject(error.response.data);
         }
         return Promise.reject(error);
     }
