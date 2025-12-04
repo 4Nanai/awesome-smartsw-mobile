@@ -69,8 +69,8 @@ export default function MQTTConfigPage() {
                 username: savedUsername || '',
                 password: savedPassword || '',
                 client_id: savedClientId || '',
-                topic_prefix: savedTopicPrefix || 'esp32switch',
-                ha_discovery_enabled: savedHaDiscoveryEnabled === 'true',
+                topic_prefix: savedTopicPrefix || 'ass',
+                ha_discovery_enabled: savedHaDiscoveryEnabled === 'false',
                 ha_discovery_prefix: savedHaDiscoveryPrefix || 'homeassistant',
             });
         } catch (error) {
