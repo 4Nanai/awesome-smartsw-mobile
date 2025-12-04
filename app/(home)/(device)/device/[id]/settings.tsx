@@ -1,5 +1,6 @@
-import { deleteDeviceApi, setAutomationModeApi, setPresenceModeApi, setSoundModeApi } from "@/api/api";
+import { deleteDeviceApi, setAutomationModeApi, setPresenceModeApi, setSensorOffDelayApi } from "@/api/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Slider from '@react-native-community/slider';
 import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router/build/hooks";
 import { useEffect, useState } from "react";
@@ -9,24 +10,23 @@ import Toast from 'react-native-toast-message';
 
 type AutomationMode = "off" | "presence" | "sound" | "timer" | "ml";
 type PresenceMode = "pir_only" | "radar_only" | "fusion_or" | "fusion_and";
-type SoundMode = "noise" | "clap";
 
 export default function DeviceSettingPage() {
     const router = useRouter();
     const {id, state, alias} = useLocalSearchParams();
     const uniqueHardwareId = typeof id === 'string' ? id : null;
-    const deviceState = typeof state === 'string' ? state as "on" | "off" | "error" : "error";
+    const deviceState = typeof state === 'string' ? state as "on" | "off" | "error" | "unknown" : "unknown";
 
     const [automationMode, setAutomationMode] = useState<AutomationMode>("off");
     const [presenceMode, setPresenceMode] = useState<PresenceMode>("pir_only");
-    const [soundMode, setSoundMode] = useState<SoundMode>("noise");
+    const [sensorOffDelay, setSensorOffDelay] = useState<number>(30);
     
     const [loadingAutomation, setLoadingAutomation] = useState(false);
     const [loadingPresence, setLoadingPresence] = useState(false);
-    const [loadingSound, setLoadingSound] = useState(false);
+    const [loadingSensorDelay, setLoadingSensorDelay] = useState(false);
     const [isLoadingConfig, setIsLoadingConfig] = useState(true);
     
-    const isDeviceError = deviceState === "error";
+    const isDeviceUnavailable = deviceState === "error" || deviceState === "unknown";
 
     useEffect(() => {
         loadSavedConfig();
@@ -40,15 +40,15 @@ export default function DeviceSettingPage() {
         if (!uniqueHardwareId) return;
         
         try {
-            const [savedAutomation, savedPresence, savedSound] = await Promise.all([
+            const [savedAutomation, savedPresence, savedSensorDelay] = await Promise.all([
                 AsyncStorage.getItem(getStorageKey('automation')),
                 AsyncStorage.getItem(getStorageKey('presence')),
-                AsyncStorage.getItem(getStorageKey('sound')),
+                AsyncStorage.getItem(getStorageKey('sensor_delay')),
             ]);
 
             if (savedAutomation) setAutomationMode(savedAutomation as AutomationMode);
             if (savedPresence) setPresenceMode(savedPresence as PresenceMode);
-            if (savedSound) setSoundMode(savedSound as SoundMode);
+            if (savedSensorDelay) setSensorOffDelay(parseInt(savedSensorDelay));
         } catch (error) {
             console.error("Error loading saved config:", error);
         } finally {
@@ -126,33 +126,33 @@ export default function DeviceSettingPage() {
         }
     };
 
-    const handleSoundModeChange = async (newMode: SoundMode) => {
-        if (!uniqueHardwareId || loadingSound) return;
+    const handleSensorOffDelayChange = async (newDelay: number) => {
+        if (!uniqueHardwareId || loadingSensorDelay) return;
         
-        const previousMode = soundMode;
-        setSoundMode(newMode);
-        setLoadingSound(true);
+        const previousDelay = sensorOffDelay;
+        setSensorOffDelay(newDelay);
+        setLoadingSensorDelay(true);
         
         try {
-            await setSoundModeApi(uniqueHardwareId, newMode);
-            await saveConfig('sound', newMode);
+            await setSensorOffDelayApi(uniqueHardwareId, newDelay);
+            await saveConfig('sensor_delay', newDelay.toString());
             Toast.show({
                 type: 'success',
                 text1: 'Success',
-                text2: `Sound mode set to ${newMode}`,
+                text2: `Sensor off delay set to ${newDelay}s`,
                 position: 'bottom',
             });
         } catch (error) {
-            console.error("Error setting sound mode:", error);
-            setSoundMode(previousMode);
+            console.error("Error setting sensor off delay:", error);
+            setSensorOffDelay(previousDelay);
             Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: 'Failed to set sound mode',
+                text2: 'Failed to set sensor off delay',
                 position: 'bottom',
             });
         } finally {
-            setLoadingSound(false);
+            setLoadingSensorDelay(false);
         }
     };
 
@@ -163,7 +163,7 @@ export default function DeviceSettingPage() {
             await Promise.all([
                 AsyncStorage.removeItem(getStorageKey('automation')),
                 AsyncStorage.removeItem(getStorageKey('presence')),
-                AsyncStorage.removeItem(getStorageKey('sound')),
+                AsyncStorage.removeItem(getStorageKey('sensor_delay')),
             ]);
             console.log("Device config cleared from AsyncStorage");
         } catch (error) {
@@ -243,7 +243,7 @@ export default function DeviceSettingPage() {
             <Stack.Screen options={{headerBackTitle: "Device"}}/>
             <ScrollView style={styles.container}>
                 <View style={styles.content}>
-                    {isDeviceError && (
+                    {isDeviceUnavailable && (
                         <View style={styles.warningCard}>
                             <Text style={styles.warningTitle}>⚠️ Device Error</Text>
                             <Text style={styles.warningMessage}>
@@ -263,7 +263,7 @@ export default function DeviceSettingPage() {
                                     mode === "ml" ? "Machine Learning" : mode.charAt(0).toUpperCase() + mode.slice(1),
                                     automationMode === mode,
                                     () => handleAutomationModeChange(mode),
-                                    loadingAutomation || isDeviceError
+                                    loadingAutomation || isDeviceUnavailable
                                 )
                             )}
                         </View>
@@ -281,7 +281,7 @@ export default function DeviceSettingPage() {
                                     mode.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
                                     presenceMode === mode,
                                     () => handlePresenceModeChange(mode),
-                                    loadingPresence || isDeviceError
+                                    loadingPresence || isDeviceUnavailable
                                 )
                             )}
                         </View>
@@ -289,27 +289,46 @@ export default function DeviceSettingPage() {
 
                     <View style={styles.card}>
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Sound Mode</Text>
-                            {loadingSound && <ActivityIndicator size="small" color="#2196F3" />}
+                            <Text style={styles.sectionTitle}>Sensor Off Delay</Text>
+                            {loadingSensorDelay && <ActivityIndicator size="small" color="#2196F3" />}
                         </View>
-                        <View style={styles.modeGrid}>
-                            {(["noise", "clap"] as SoundMode[]).map((mode) =>
-                                renderModeButton(
-                                    `sound-${mode}`,
-                                    mode.charAt(0).toUpperCase() + mode.slice(1),
-                                    soundMode === mode,
-                                    () => handleSoundModeChange(mode),
-                                    loadingSound || isDeviceError
-                                )
-                            )}
+                        <View style={styles.sliderContainer}>
+                            <View style={styles.sliderHeader}>
+                                <Text style={styles.sliderLabel}>Delay Time</Text>
+                                <Text style={styles.sliderValue}>{sensorOffDelay}s</Text>
+                            </View>
+                            <Slider
+                                style={styles.slider}
+                                minimumValue={15}
+                                maximumValue={300}
+                                step={5}
+                                value={sensorOffDelay}
+                                onSlidingComplete={handleSensorOffDelayChange}
+                                minimumTrackTintColor="#2196F3"
+                                maximumTrackTintColor="#e0e0e0"
+                                thumbTintColor="#2196F3"
+                                disabled={loadingSensorDelay || isDeviceUnavailable}
+                            />
+                            <View style={styles.sliderRange}>
+                                <Text style={styles.sliderRangeText}>15s</Text>
+                                <Text style={styles.sliderRangeText}>300s</Text>
+                            </View>
+                            <Text style={styles.sliderDescription}>
+                                Time to wait before turning off after no presence detected
+                            </Text>
                         </View>
                     </View>
 
                     <View style={styles.card}>
                         <Text style={styles.sectionTitle}>Device Management</Text>
                         <Pressable 
-                            style={({pressed}) => [styles.connectButton, pressed && {opacity: 0.5}]} 
+                            style={({pressed}) => [
+                                styles.connectButton, 
+                                pressed && {opacity: 0.5},
+                                isDeviceUnavailable && styles.connectButtonDisabled
+                            ]} 
                             onPress={handleConnectToHomeAssistant}
+                            disabled={isDeviceUnavailable}
                         >
                             <View style={{flexDirection: 'row', alignItems: 'center'}}>
                                 <Svg width={20} height={20} viewBox="0 0 24 24" style={{marginRight: 8}}>
@@ -416,6 +435,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 10,
     },
+    connectButtonDisabled: {
+        backgroundColor: '#9E9E9E',
+        opacity: 0.6,
+    },
     connectButtonText: {
         color: 'white',
         fontSize: 16,
@@ -449,5 +472,43 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#E65100',
         lineHeight: 20,
+    },
+    sliderContainer: {
+        paddingVertical: 10,
+    },
+    sliderHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    sliderLabel: {
+        fontSize: 16,
+        color: '#666',
+        fontWeight: '500',
+    },
+    sliderValue: {
+        fontSize: 18,
+        color: '#2196F3',
+        fontWeight: 'bold',
+    },
+    slider: {
+        width: '100%',
+        height: 40,
+    },
+    sliderRange: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: -5,
+    },
+    sliderRangeText: {
+        fontSize: 12,
+        color: '#999',
+    },
+    sliderDescription: {
+        fontSize: 13,
+        color: '#999',
+        marginTop: 10,
+        lineHeight: 18,
     },
 });

@@ -46,9 +46,9 @@ export interface SetPresenceModeDTO {
     mode: "pir_only" | "radar_only" | "fusion_or" | "fusion_and",
 }
 
-export interface SetSoundModeDTO {
+export interface SetSensorOffDelayDTO {
     unique_hardware_id: string,
-    mode: "noise" | "clap",
+    delay: number,
 }
 
 export interface MQTTConfigDTO {
