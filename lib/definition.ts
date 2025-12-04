@@ -46,7 +46,36 @@ export interface SetPresenceModeDTO {
     mode: "pir_only" | "radar_only" | "fusion_or" | "fusion_and",
 }
 
-export interface SetSoundModeDTO {
+export interface SetSensorOffDelayDTO {
     unique_hardware_id: string,
-    mode: "noise" | "clap",
+    delay: number,
+}
+
+export interface TimerEvent {
+    h: number;
+    m: number;
+    s: number;
+    a: boolean;
+}
+
+export interface TimerConfig {
+    [day: string]: TimerEvent[];
+}
+
+export interface SetTimerConfigDTO {
+    unique_hardware_id: string,
+    timer: TimerConfig,
+}
+
+export interface MQTTConfigDTO {
+    enable: boolean;
+    device_name?: string;
+    broker_url?: string;
+    port?: number;
+    topic_prefix?: string;
+    username?: string;
+    password?: string;
+    client_id?: string;
+    ha_discovery_enabled?: boolean;
+    ha_discovery_prefix?: string;
 }

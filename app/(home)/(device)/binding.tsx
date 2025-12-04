@@ -1,11 +1,183 @@
-import {Text, View, TextInput, Pressable, StyleSheet, Alert, ActivityIndicator} from "react-native";
-import {useState, useEffect, useRef} from "react";
-import {useRouter} from "expo-router";
-import {verifyEndpointAPConnection, getProvisioningToken, sendWiFiCredentialsToEndpoint} from "@/api/api";
-import {useApiSocket} from "@/hook/useApiSocket";
+import { getProvisioningToken, sendWiFiCredentialsToEndpoint, verifyEndpointAPConnection } from "@/api/api";
+import { useApiSocket } from "@/hook/useApiSocket";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from "react-native";
 
 export default function BindingPage() {
     const router = useRouter();
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
+
+    const lightColors = {
+        background: '#f5f5f5',
+        card: 'white',
+        text: '#333',
+        label: '#666',
+        inputBg: 'white',
+        inputBorder: '#ddd',
+        buttonBg: '#4CAF50',
+        buttonDisabledBg: '#9E9E9E',
+        buttonText: 'white',
+        cancelText: '#666',
+        instructionsBg: '#E3F2FD',
+        instructionsTitle: '#1976D2',
+        instructionsText: '#1976D2',
+        shadow: '#000',
+    };
+
+    const darkColors = {
+        background: '#121212',
+        card: '#1e1e1e',
+        text: '#fff',
+        label: '#ccc',
+        inputBg: '#2c2c2c',
+        inputBorder: '#555',
+        buttonBg: '#4CAF50',
+        buttonDisabledBg: '#666',
+        buttonText: 'white',
+        cancelText: '#ccc',
+        instructionsBg: '#747dffec',
+        instructionsTitle: '#bbdefb',
+        instructionsText: '#bbdefb',
+        shadow: '#000',
+    };
+
+    const colors = isDark ? darkColors : lightColors;
+
+    const getStyles = (colors: typeof lightColors) => StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: colors.background,
+        },
+        header: {
+            paddingHorizontal: 20,
+            marginBottom: 20,
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: colors.text,
+            marginBottom: 5,
+        },
+        subtitle: {
+            fontSize: 14,
+            color: colors.label,
+        },
+        statusContainer: {
+            marginHorizontal: 20,
+            padding: 15,
+            backgroundColor: colors.card,
+            borderRadius: 8,
+            marginBottom: 20,
+            shadowColor: colors.shadow,
+            shadowOffset: {
+                width: 0,
+                height: 1,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 2,
+            elevation: 2,
+        },
+        statusRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        statusLabel: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.text,
+        },
+        statusIndicator: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        statusDot: {
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            marginRight: 8,
+        },
+        statusText: {
+            fontSize: 14,
+            fontWeight: '600',
+        },
+        warningText: {
+            marginTop: 10,
+            fontSize: 12,
+            color: '#F44336',
+            fontStyle: 'italic',
+        },
+        form: {
+            paddingHorizontal: 20,
+        },
+        inputGroup: {
+            marginBottom: 20,
+        },
+        label: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.text,
+            marginBottom: 8,
+        },
+        input: {
+            backgroundColor: colors.inputBg,
+            paddingHorizontal: 15,
+            paddingVertical: 12,
+            borderRadius: 8,
+            fontSize: 16,
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+            color: colors.text,
+        },
+        bindButton: {
+            backgroundColor: colors.buttonBg,
+            padding: 15,
+            borderRadius: 8,
+            alignItems: 'center',
+            marginTop: 10,
+        },
+        bindButtonDisabled: {
+            backgroundColor: colors.buttonDisabledBg,
+        },
+        bindButtonText: {
+            color: colors.buttonText,
+            fontSize: 16,
+            fontWeight: 'bold',
+        },
+        cancelButton: {
+            backgroundColor: 'transparent',
+            padding: 15,
+            borderRadius: 8,
+            alignItems: 'center',
+            marginTop: 10,
+        },
+        cancelButtonText: {
+            color: colors.cancelText,
+            fontSize: 16,
+        },
+        instructions: {
+            marginHorizontal: 20,
+            marginTop: 30,
+            padding: 15,
+            backgroundColor: colors.instructionsBg,
+            borderRadius: 8,
+        },
+        instructionsTitle: {
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: colors.instructionsTitle,
+            marginBottom: 10,
+        },
+        instructionText: {
+            fontSize: 13,
+            color: colors.instructionsText,
+            marginBottom: 5,
+        },
+    });
+
+    const styles = useMemo(() => getStyles(colors), [colors]);
 
     const [ssid, setSsid] = useState("");
     const [password, setPassword] = useState("");
@@ -117,7 +289,7 @@ export default function BindingPage() {
     };
 
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container} contentContainerStyle={{paddingTop: 50}}>
             <View style={styles.header}>
                 <Text style={styles.title}>Bind New Device</Text>
                 <Text style={styles.subtitle}>Connect your device to Endpoint AP</Text>
@@ -202,139 +374,7 @@ export default function BindingPage() {
                 <Text style={styles.instructionText}>3. Enter your home WiFi credentials</Text>
                 <Text style={styles.instructionText}>4. Tap "Start Binding" to complete setup</Text>
             </View>
-        </View>
+        </ScrollView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-        paddingTop: 50,
-    },
-    header: {
-        paddingHorizontal: 20,
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 5,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: '#666',
-    },
-    statusContainer: {
-        marginHorizontal: 20,
-        padding: 15,
-        backgroundColor: 'white',
-        borderRadius: 8,
-        marginBottom: 20,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    statusRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    statusLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-    },
-    statusIndicator: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    statusDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        marginRight: 8,
-    },
-    statusText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    warningText: {
-        marginTop: 10,
-        fontSize: 12,
-        color: '#F44336',
-        fontStyle: 'italic',
-    },
-    form: {
-        paddingHorizontal: 20,
-    },
-    inputGroup: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        marginBottom: 8,
-    },
-    input: {
-        backgroundColor: 'white',
-        paddingHorizontal: 15,
-        paddingVertical: 12,
-        borderRadius: 8,
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: '#ddd',
-    },
-    bindButton: {
-        backgroundColor: '#4CAF50',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    bindButtonDisabled: {
-        backgroundColor: '#9E9E9E',
-    },
-    bindButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    cancelButton: {
-        backgroundColor: 'transparent',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    cancelButtonText: {
-        color: '#666',
-        fontSize: 16,
-    },
-    instructions: {
-        marginHorizontal: 20,
-        marginTop: 30,
-        padding: 15,
-        backgroundColor: '#E3F2FD',
-        borderRadius: 8,
-    },
-    instructionsTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#1976D2',
-        marginBottom: 10,
-    },
-    instructionText: {
-        fontSize: 13,
-        color: '#1976D2',
-        marginBottom: 5,
-    },
-});
 

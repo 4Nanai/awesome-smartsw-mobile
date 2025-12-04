@@ -1,21 +1,163 @@
-import React, {useState} from 'react';
+import { loginApi } from "@/api/api";
+import { useRouter } from "expo-router";
+import React, { useState } from 'react';
 import {
-    StyleSheet,
-    Text,
-    View,
-    TextInput,
     Alert,
     KeyboardAvoidingView,
     Platform,
-    ScrollView,
     Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    useColorScheme,
+    View,
 } from "react-native";
-import Colors from '../../constants/Colors';
-import {loginApi} from "@/api/api";
-import {useRouter} from "expo-router";
 
 export default function LoginPage() {
     const router = useRouter();
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
+
+    const lightColors = {
+        background: '#f5f5f5',
+        card: 'white',
+        text: '#333',
+        label: '#666',
+        secondaryText: '#999',
+        inputBg: '#f9f9f9',
+        inputBorder: '#ddd',
+        buttonBg: '#2196F3',
+        buttonText: 'white',
+        registerButtonBg: 'transparent',
+        registerButtonBorder: '#2196F3',
+        registerButtonText: '#2196F3',
+        divider: '#ddd',
+        dividerText: '#666',
+        forgotPasswordText: '#2196F3',
+        shadow: '#000',
+    };
+
+    const darkColors = {
+        background: '#121212',
+        card: '#1e1e1e',
+        text: '#fff',
+        label: '#ccc',
+        secondaryText: '#aaa',
+        inputBg: '#2c2c2c',
+        inputBorder: '#555',
+        buttonBg: '#2196F3',
+        buttonText: 'white',
+        registerButtonBg: 'transparent',
+        registerButtonBorder: '#2196F3',
+        registerButtonText: '#2196F3',
+        divider: '#555',
+        dividerText: '#ccc',
+        forgotPasswordText: '#2196F3',
+        shadow: '#000',
+    };
+
+    const colors = isDark ? darkColors : lightColors;
+
+    const getStyles = (colors: typeof lightColors) => StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: colors.background,
+        },
+        scrollContainer: {
+            flexGrow: 1,
+            justifyContent: 'center',
+            padding: 20,
+        },
+        loginContainer: {
+            width: '100%',
+            maxWidth: 400,
+            alignSelf: 'center',
+        },
+        title: {
+            fontSize: 32,
+            fontWeight: 'bold',
+            color: colors.text,
+            textAlign: 'center',
+            marginBottom: 8,
+        },
+        subtitle: {
+            fontSize: 16,
+            color: colors.secondaryText,
+            textAlign: 'center',
+            marginBottom: 40,
+        },
+        inputContainer: {
+            marginBottom: 20,
+        },
+        inputLabel: {
+            fontSize: 16,
+            color: colors.text,
+            marginBottom: 8,
+            fontWeight: '500',
+        },
+        input: {
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+            borderRadius: 12,
+            padding: 16,
+            fontSize: 16,
+            backgroundColor: colors.inputBg,
+            color: colors.text,
+        },
+        button: {
+            borderRadius: 12,
+            padding: 16,
+            alignItems: 'center',
+            marginBottom: 16,
+        },
+        loginButton: {
+            backgroundColor: colors.buttonBg,
+            marginTop: 20,
+        },
+        loginButtonText: {
+            color: colors.buttonText,
+            fontSize: 18,
+            fontWeight: '600',
+        },
+        registerButton: {
+            backgroundColor: colors.registerButtonBg,
+            borderWidth: 2,
+            borderColor: colors.registerButtonBorder,
+        },
+        registerButtonText: {
+            color: colors.registerButtonText,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        divider: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginVertical: 20,
+        },
+        dividerLine: {
+            flex: 1,
+            height: 1,
+            backgroundColor: colors.divider,
+        },
+        dividerText: {
+            marginHorizontal: 16,
+            color: colors.dividerText,
+            fontSize: 14,
+        },
+        forgotPasswordButton: {
+            alignItems: 'center',
+            paddingVertical: 16,
+        },
+        forgotPasswordText: {
+            color: colors.forgotPasswordText,
+            fontSize: 14,
+            textDecorationLine: 'underline',
+        },
+    });
+
+    const styles = getStyles(colors);
+
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -117,100 +259,3 @@ export default function LoginPage() {
         </KeyboardAvoidingView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.light.background,
-    },
-    scrollContainer: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        padding: 20,
-    },
-    loginContainer: {
-        width: '100%',
-        maxWidth: 400,
-        alignSelf: 'center',
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: Colors.light.text,
-        textAlign: 'center',
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 40,
-    },
-    inputContainer: {
-        marginBottom: 20,
-    },
-    inputLabel: {
-        fontSize: 16,
-        color: Colors.light.text,
-        marginBottom: 8,
-        fontWeight: '500',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
-        backgroundColor: '#f9f9f9',
-        color: Colors.light.text,
-    },
-    button: {
-        borderRadius: 12,
-        padding: 16,
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    loginButton: {
-        backgroundColor: Colors.light.tint,
-        marginTop: 20,
-    },
-    loginButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    registerButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderColor: Colors.light.tint,
-    },
-    registerButtonText: {
-        color: Colors.light.tint,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    divider: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 20,
-    },
-    dividerLine: {
-        flex: 1,
-        height: 1,
-        backgroundColor: '#ddd',
-    },
-    dividerText: {
-        marginHorizontal: 16,
-        color: '#666',
-        fontSize: 14,
-    },
-    forgotPasswordButton: {
-        alignItems: 'center',
-        paddingVertical: 16,
-    },
-    forgotPasswordText: {
-        color: Colors.light.tint,
-        fontSize: 14,
-        textDecorationLine: 'underline',
-    },
-})

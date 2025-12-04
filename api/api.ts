@@ -1,9 +1,11 @@
 import {
     DeviceDTO,
     DeviceUpdateAliasDTO,
+    MQTTConfigDTO,
     SetAutomationModeDTO,
     SetPresenceModeDTO,
-    SetSoundModeDTO,
+    SetSensorOffDelayDTO,
+    SetTimerConfigDTO,
     UserLoginDTO,
     UserRegisterDTO
 } from "@/lib/definition";
@@ -191,16 +193,30 @@ const setPresenceModeApi = async (uniqueHardwareId: string, mode: "pir_only" | "
     }
 }
 
-const setSoundModeApi = async (uniqueHardwareId: string, mode: "noise" | "clap") => {
+const setSensorOffDelayApi = async (uniqueHardwareId: string, delay: number) => {
     try {
-        const setSoundModeDTO: SetSoundModeDTO = {
+        const setSensorOffDelayDTO: SetSensorOffDelayDTO = {
             unique_hardware_id: uniqueHardwareId,
-            mode,
+            delay,
         }
-        const response = await apiClient.post<{ message: string }>('/device/manage/config/sound-mode', setSoundModeDTO);
+        const response = await apiClient.post<{ message: string }>('/device/manage/config/sensor-off-delay', setSensorOffDelayDTO);
         return response.data.message;
     } catch (error) {
-        console.log("Set Sound Mode API Error:", error);
+        console.log("Set Sensor Off Delay API Error:", error);
+        throw error;
+    }
+}
+
+const setTimerConfigApi = async (uniqueHardwareId: string, timer: SetTimerConfigDTO['timer']) => {
+    try {
+        const setTimerConfigDTO: SetTimerConfigDTO = {
+            unique_hardware_id: uniqueHardwareId,
+            timer,
+        }
+        const response = await apiClient.post<{ message: string }>('/device/manage/config/timer', setTimerConfigDTO);
+        return response.data.message;
+    } catch (error) {
+        console.log("Set Timer Config API Error:", error);
         throw error;
     }
 }
@@ -215,10 +231,19 @@ const getDeviceManageStatsApi = async () => {
     }
 }
 
+const setMQTTConfigApi = async (uniqueHardwareId: string, config: MQTTConfigDTO) => {
+    try {
+        const response = await apiClient.post<{ message: string }>(`/device/manage/${uniqueHardwareId}/mqtt-config`, config);
+        return response.data.message;
+    } catch (error) {
+        console.log("Set MQTT Config API Error:", error);
+        throw error;
+    }
+}
+
 export {
     deleteDeviceApi, getAllDevicesApi, getDeviceManageStatsApi, getProvisioningToken, loginApi,
-    registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi,
-    setPresenceModeApi,
-    setSoundModeApi, updateDeviceAliasApi, verifyEndpointAPConnection
+    registerApi, sendWiFiCredentialsToEndpoint, setAutomationModeApi, setMQTTConfigApi, setPresenceModeApi,
+    setSensorOffDelayApi, setTimerConfigApi, updateDeviceAliasApi, verifyEndpointAPConnection
 };
 
