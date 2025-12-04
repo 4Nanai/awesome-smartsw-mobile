@@ -1,10 +1,10 @@
 import { updateDeviceAliasApi } from "@/api/api";
 import { useApiSocket } from "@/hook/useApiSocket";
-import { UserMessageDTO } from "@/lib/definition";
+import { SensorData, UserMessageDTO } from "@/lib/definition";
 import { Stack, useRouter } from "expo-router";
 import { useLocalSearchParams } from "expo-router/build/hooks";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, useColorScheme, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, useColorScheme, View } from "react-native";
 import { ReadyState } from "react-use-websocket";
 
 export default function DevicePage() {
@@ -27,6 +27,9 @@ export default function DevicePage() {
         statusText: '#666',
         warning: '#F44336',
         shadow: '#000',
+        sensorLabel: '#888',
+        sensorValue: '#555',
+        cardBorder: '#f0f0f0',
     };
 
     const darkColors = {
@@ -45,6 +48,9 @@ export default function DevicePage() {
         statusText: '#ccc',
         warning: '#F44336',
         shadow: '#000',
+        sensorLabel: '#aaa',
+        sensorValue: '#eee',
+        cardBorder: '#333',
     };
 
     const colors = isDark ? darkColors : lightColors;
@@ -253,7 +259,61 @@ export default function DevicePage() {
             color: colors.text,
             fontSize: 16,
             fontWeight: '600',
-        }
+        },
+        sensorCard: {
+            backgroundColor: colors.card,
+            padding: 15,
+            marginBottom: 15,
+            borderRadius: 10,
+            shadowColor: colors.shadow,
+            shadowOffset: {
+                width: 0,
+                height: 2,
+            },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+            elevation: 3,
+        },
+        sensorGrid: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 15,
+        },
+        sensorItem: {
+            flex: 1,
+            minWidth: '45%',
+            backgroundColor: isDark ? '#2c2c2c' : '#f9f9f9',
+            padding: 12,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+        },
+        sensorLabel: {
+            fontSize: 12,
+            color: colors.sensorLabel,
+            marginBottom: 4,
+            fontWeight: '600',
+        },
+        sensorValue: {
+            fontSize: 18,
+            color: colors.sensorValue,
+            fontWeight: 'bold',
+        },
+        sensorUnit: {
+            fontSize: 14,
+            color: colors.sensorLabel,
+            marginLeft: 2,
+        },
+        sensorState: {
+            fontSize: 14,
+            fontWeight: '600',
+        },
+        sensorStateActive: {
+            color: '#4CAF50',
+        },
+        sensorStateIdle: {
+            color: '#9E9E9E',
+        },
     });
 
     const styles = useMemo(() => getStyles(colors), [colors]);
@@ -266,6 +326,7 @@ export default function DevicePage() {
 
     const [currentState, setCurrentState] = useState<"on" | "off" | "error">(initialState);
     const [currentAlias, setCurrentAlias] = useState<string>(initialAlias || '');
+    const [sensorData, setSensorData] = useState<SensorData | undefined>(undefined);
     const [enableToggle, setEnableToggle] = useState(false);
     const [toggleState, setToggleState] = useState(false);
     const [isEditingAlias, setIsEditingAlias] = useState(false);
@@ -274,6 +335,9 @@ export default function DevicePage() {
     const handleEndpointStateUpdate = (message: UserMessageDTO) => {
         if (message.payload && message.payload.uniqueHardwareId === uniqueHardwareId && message.payload.state) {
             setCurrentState(message.payload.state);
+            if (message.payload.sensor) {
+                setSensorData(message.payload.sensor);
+            }
             if (message.payload.state === "on") {
                 setToggleState(true);
             } else if (message.payload.state === "off") {
@@ -349,6 +413,25 @@ export default function DevicePage() {
         router.push(`/(home)/(device)/device/${uniqueHardwareId}/settings?state=${currentState}&alias=${currentAlias}`);
     }
 
+    const formatTimestamp = (ts: number) => {
+        const now = Date.now();
+        const diffMs = now - ts;
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHour = Math.floor(diffMin / 60);
+        const diffDay = Math.floor(diffHour / 24);
+
+        if (diffSec < 60) {
+            return `${diffSec}s ago`;
+        } else if (diffMin < 60) {
+            return `${diffMin}m ago`;
+        } else if (diffHour < 24) {
+            return `${diffHour}h ago`;
+        } else {
+            return `${diffDay}d ago`;
+        }
+    };
+
     const getStatusColor = (status: "on" | "off" | "error") => {
         switch (status) {
             case "on":
@@ -392,7 +475,11 @@ export default function DevicePage() {
                     <Text style={styles.statusTextSmall}>Auth: {isAuthenticated ? 'Yes' : 'No'}</Text>
                 </View>
 
-                <View style={styles.content}>
+                <ScrollView 
+                    style={styles.content}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{paddingBottom: 20}}
+                >
                     <View style={styles.card}>
                         <Text style={styles.sectionTitle}>Device Information</Text>
 
@@ -449,6 +536,56 @@ export default function DevicePage() {
                         </View>
                     </View>
 
+                    {sensorData && (
+                        <View style={styles.sensorCard}>
+                            <Text style={styles.sectionTitle}>Sensor Data</Text>
+                            <View style={styles.sensorGrid}>
+                                {sensorData.temp_humi && (
+                                    <>
+                                        <View style={styles.sensorItem}>
+                                            <Text style={styles.sensorLabel}>🌡️ Temperature</Text>
+                                            <Text style={styles.sensorValue}>
+                                                {sensorData.temp_humi.temperature.toFixed(1)}
+                                                <Text style={styles.sensorUnit}>°C</Text>
+                                            </Text>
+                                        </View>
+                                        <View style={styles.sensorItem}>
+                                            <Text style={styles.sensorLabel}>💧 Humidity</Text>
+                                            <Text style={styles.sensorValue}>
+                                                {sensorData.temp_humi.humidity.toFixed(0)}
+                                                <Text style={styles.sensorUnit}>%</Text>
+                                            </Text>
+                                        </View>
+                                    </>
+                                )}
+                                {sensorData.pir && (
+                                    <View style={styles.sensorItem}>
+                                        <Text style={styles.sensorLabel}>👁️ PIR Sensor</Text>
+                                        <Text style={[styles.sensorState, sensorData.pir.state ? styles.sensorStateActive : styles.sensorStateIdle]}>
+                                            {sensorData.pir.state ? 'Active' : 'Idle'}
+                                        </Text>
+                                    </View>
+                                )}
+                                {sensorData.radar && (
+                                    <View style={styles.sensorItem}>
+                                        <Text style={styles.sensorLabel}>📡 Radar Sensor</Text>
+                                        <Text style={[styles.sensorState, sensorData.radar.state ? styles.sensorStateActive : styles.sensorStateIdle]}>
+                                            {sensorData.radar.state ? 'Active' : 'Idle'}
+                                        </Text>
+                                    </View>
+                                )}
+                                {sensorData.sound && (
+                                    <View style={styles.sensorItem}>
+                                        <Text style={styles.sensorLabel}>🔊 Last Motion</Text>
+                                        <Text style={styles.sensorValue}>
+                                            {formatTimestamp(sensorData.sound.ts)}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                    )}
+
                     <View style={styles.card}>
                         <View style={styles.controlRow}>
                             <Text style={[styles.sectionTitle, {marginBottom: 0}]}>Control</Text>
@@ -460,7 +597,7 @@ export default function DevicePage() {
                             </Text>
                         )}
                     </View>
-                </View>
+                </ScrollView>
             </View>
         </>
     );

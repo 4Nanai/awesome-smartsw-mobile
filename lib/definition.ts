@@ -22,12 +22,32 @@ export interface UpdateUserTimezoneDTO {
     timezone: string,
 }
 
+export interface SensorData {
+    temp_humi?: {
+        temperature: number,
+        humidity: number,
+        ts: number,
+    },
+    pir?: {
+        state: boolean,
+        ts: number,
+    },
+    radar?: {
+        state: boolean,
+        ts: number,
+    },
+    sound?: {
+        ts: number,
+    },
+}
+
 export interface UserMessageDTO {
     type: "user_auth" | "set_endpoint_state" | "auth_success" | "auth_failure" | "new_device_connected" | "endpoint_state"  | "query_endpoint_state",
     payload?: {
         uniqueHardwareId?: string,
         token?: string,
         state?: "on" | "off" | "error",
+        sensor?: SensorData,
         command?: {
             state?: boolean,
             data?: string,
@@ -42,6 +62,7 @@ export interface DeviceDTO {
     unique_hardware_id: string,
     alias: string | null,
     status: "on" | "off" | "unknown" | "error",
+    sensor?: SensorData,
 }
 
 export interface DeviceUpdateAliasDTO {

@@ -27,6 +27,8 @@ export default function HomePage() {
         emptyTitle: '#333',
         emptySubtitle: '#666',
         primaryButtonBg: '#4CAF50',
+        sensorText: '#888',
+        sensorValue: '#555',
     };
 
     const darkColors = {
@@ -44,6 +46,8 @@ export default function HomePage() {
         emptyTitle: '#fff',
         emptySubtitle: '#ccc',
         primaryButtonBg: '#4CAF50',
+        sensorText: '#aaa',
+        sensorValue: '#ccc',
     };
 
     const colors = isDark ? darkColors : lightColors;
@@ -166,6 +170,32 @@ export default function HomePage() {
             color: colors.arrow,
             marginLeft: 10,
         },
+        sensorInfo: {
+            marginTop: 8,
+            paddingTop: 8,
+            borderTopWidth: 1,
+            borderTopColor: isDark ? '#333' : '#f0f0f0',
+        },
+        sensorRow: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 12,
+            marginTop: 4,
+        },
+        sensorItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        sensorLabel: {
+            fontSize: 11,
+            color: colors.sensorText,
+            marginRight: 4,
+        },
+        sensorValue: {
+            fontSize: 11,
+            color: colors.sensorValue,
+            fontWeight: '600',
+        },
         addButton: {
             backgroundColor: colors.buttonBg,
             padding: 15,
@@ -241,7 +271,8 @@ export default function HomePage() {
                     if (device.unique_hardware_id === message.payload!.uniqueHardwareId) {
                         return {
                             ...device,
-                            status: message.payload!.state!
+                            status: message.payload!.state!,
+                            sensor: message.payload!.sensor
                         };
                     }
                     return device;
@@ -360,6 +391,25 @@ export default function HomePage() {
         [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
     }[readyState];
 
+    const formatTimestamp = (ts: number) => {
+        const now = Date.now();
+        const diffMs = now - ts;
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHour = Math.floor(diffMin / 60);
+        const diffDay = Math.floor(diffHour / 24);
+
+        if (diffSec < 60) {
+            return `${diffSec}s ago`;
+        } else if (diffMin < 60) {
+            return `${diffMin}m ago`;
+        } else if (diffHour < 24) {
+            return `${diffHour}h ago`;
+        } else {
+            return `${diffDay}d ago`;
+        }
+    };
+
     const getStatusColor = (status: "on" | "off" | "unknown" | "error") => {
         switch (status) {
             case "on":
@@ -386,6 +436,42 @@ export default function HomePage() {
                         {item.status}
                     </Text>
                 </View>
+                {item.sensor && (
+                    <View style={styles.sensorInfo}>
+                        <View style={styles.sensorRow}>
+                            {item.sensor.temp_humi && (
+                                <>
+                                    <View style={styles.sensorItem}>
+                                        <Text style={styles.sensorLabel}>🌡️</Text>
+                                        <Text style={styles.sensorValue}>{item.sensor.temp_humi.temperature.toFixed(1)}°C</Text>
+                                    </View>
+                                    <View style={styles.sensorItem}>
+                                        <Text style={styles.sensorLabel}>💧</Text>
+                                        <Text style={styles.sensorValue}>{item.sensor.temp_humi.humidity.toFixed(0)}%</Text>
+                                    </View>
+                                </>
+                            )}
+                            {item.sensor.pir && (
+                                <View style={styles.sensorItem}>
+                                    <Text style={styles.sensorLabel}>PIR:</Text>
+                                    <Text style={styles.sensorValue}>{item.sensor.pir.state ? 'Active' : 'Idle'}</Text>
+                                </View>
+                            )}
+                            {item.sensor.radar && (
+                                <View style={styles.sensorItem}>
+                                    <Text style={styles.sensorLabel}>Radar:</Text>
+                                    <Text style={styles.sensorValue}>{item.sensor.radar.state ? 'Active' : 'Idle'}</Text>
+                                </View>
+                            )}
+                            {item.sensor.sound && (
+                                <View style={styles.sensorItem}>
+                                    <Text style={styles.sensorLabel}>Sound:</Text>
+                                    <Text style={styles.sensorValue}>{formatTimestamp(item.sensor.sound.ts)}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
             </View>
             <Text style={styles.arrow}>→</Text>
         </Pressable>
