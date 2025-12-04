@@ -415,7 +415,7 @@ export default function DevicePage() {
 
     const formatTimestamp = (ts: number) => {
         const now = Date.now();
-        const diffMs = now - ts;
+        const diffMs = now - ts * 1000.0;
         const diffSec = Math.floor(diffMs / 1000);
         const diffMin = Math.floor(diffSec / 60);
         const diffHour = Math.floor(diffMin / 60);
@@ -576,7 +576,7 @@ export default function DevicePage() {
                                 )}
                                 {sensorData.sound && (
                                     <View style={styles.sensorItem}>
-                                        <Text style={styles.sensorLabel}>🔊 Last Motion</Text>
+                                        <Text style={styles.sensorLabel}>🔊 Last Sound Timestamp</Text>
                                         <Text style={styles.sensorValue}>
                                             {formatTimestamp(sensorData.sound.ts)}
                                         </Text>
